@@ -333,6 +333,7 @@ export default function LandingPage() {
                   variant="outline"
                   size="lg"
                   className="px-10 py-4 text-lg bg-transparent border-2 border-[#ffcb74] text-[#ffcb74] hover:bg-[#ffcb74] hover:text-black transition-all duration-300"
+                  onClick={() => window.location.href = "/onboarding"}
                 >
                   Try Prototype
                 </Button>

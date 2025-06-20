@@ -8,6 +8,8 @@ import { DisplayLG, DisplaySM, BodyMedium } from "@/components/ui/typography"
 import { Badge } from "@/components/ui/badge"
 import { CardContent, CardHeader } from "@/components/ui/card"
 import { Lightbulb, Users, TrendingUp, ArrowRight, ArrowLeft } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Sparkles } from "lucide-react"
 
 const userTypes = [
   {
@@ -55,83 +57,99 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-dark flex items-center justify-center px-6 py-20">
-      <div className="max-w-6xl mx-auto w-full">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <Badge className="mb-6 bg-highlight/20 text-highlight border-highlight/30 px-4 py-2">Step 1 of 3</Badge>
-          <DisplayLG className="mb-6">Choose Your Journey</DisplayLG>
-          <BodyMedium className="max-w-3xl mx-auto text-xl text-text/70">
-            Select the path that best describes your goals and we'll customize your experience
-          </BodyMedium>
-        </div>
-
-        {/* User Type Selection */}
-        <div className="grid lg:grid-cols-3 gap-8 mb-16">
-          {userTypes.map((type) => {
-            const Icon = type.icon
-            const isSelected = selectedType === type.id
-
-            return (
-              <ModernCard
-                key={type.id}
-                variant="elevated"
-                hover
-                className={`cursor-pointer transition-all duration-300 relative overflow-hidden group ${
-                  isSelected ? "ring-2 ring-highlight shadow-2xl scale-105" : ""
-                }`}
-                onClick={() => setSelectedType(type.id)}
-              >
-                {/* Background Gradient */}
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br ${type.gradient} opacity-0 group-hover:opacity-100 ${isSelected ? "opacity-100" : ""} transition-opacity duration-500`}
-                />
-
-                <CardHeader className="relative z-10 text-center pb-6">
-                  <div
-                    className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 transition-all duration-300 ${
-                      isSelected ? "bg-highlight/30" : "bg-highlight/20 group-hover:bg-highlight/30"
-                    }`}
-                  >
-                    <Icon className="h-10 w-10 text-highlight" />
-                  </div>
-                  <DisplaySM className="mb-4">{type.title}</DisplaySM>
-                  <BodyMedium className="text-text/70">{type.description}</BodyMedium>
-                </CardHeader>
-
-                <CardContent className="relative z-10 pt-0">
-                  <ul className="space-y-4">
-                    {type.features.map((feature, index) => (
-                      <li key={index} className="flex items-center text-text/80">
-                        <div className="w-2 h-2 bg-highlight rounded-full mr-4 flex-shrink-0" />
-                        <span className="text-base">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </ModernCard>
-            )
-          })}
-        </div>
-
+    <div className="relative min-h-screen overflow-hidden bg-black text-white">
+      {/* Content Overlay */}
+      <div className="relative z-10 min-h-screen flex flex-col">
         {/* Navigation */}
-        <div className="flex justify-between items-center">
-          <ModernButton variant="ghost" onClick={() => router.push("/")} size="lg">
-            <ArrowLeft className="mr-2 h-5 w-5" />
-            Back to Home
-          </ModernButton>
-
-          <ModernButton
-            onClick={handleContinue}
-            disabled={!selectedType}
-            size="lg"
-            className={!selectedType ? "opacity-50 cursor-not-allowed" : ""}
+        <nav className="p-6 flex justify-between items-center">
+          <div className="text-2xl font-bold">
+            <span className="text-white">Startup</span>
+            <span style={{ color: "#ffcb74" }}>Hub</span>
+          </div>
+          <Button
+            variant="outline"
+            className="bg-transparent border-[#ffcb74] text-[#ffcb74] hover:bg-[#ffcb74] hover:text-black transition-all duration-300"
+            onClick={() => router.push("/auth")}
           >
-            Continue
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </ModernButton>
-        </div>
+            Sign In
+          </Button>
+        </nav>
+        {/* Main Onboarding Content */}
+        <main className="flex-1 flex flex-col items-center justify-center px-6 py-20">
+          <div className="max-w-6xl mx-auto w-full">
+            {/* Header */}
+            <div className="text-center mb-16">
+              <Badge className="mb-6 bg-highlight/20 text-highlight border-highlight/30 px-4 py-2">Step 1 of 3</Badge>
+              <DisplayLG className="mb-6">Choose Your Journey</DisplayLG>
+              <BodyMedium className="max-w-3xl mx-auto text-xl text-gray-300">
+                Select the path that best describes your goals and we'll customize your experience
+              </BodyMedium>
+            </div>
+            {/* User Type Selection */}
+            <div className="grid lg:grid-cols-3 gap-8 mb-16">
+              {userTypes.map((type) => {
+                const Icon = type.icon
+                const isSelected = selectedType === type.id
+                return (
+                  <ModernCard
+                    key={type.id}
+                    variant="elevated"
+                    hover
+                    className={`cursor-pointer transition-all duration-300 relative overflow-hidden group ${isSelected ? "ring-2 ring-highlight shadow-2xl scale-105" : ""}`}
+                    onClick={() => setSelectedType(type.id)}
+                  >
+                    {/* Background Gradient */}
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-br ${type.gradient} opacity-0 group-hover:opacity-100 ${isSelected ? "opacity-100" : ""} transition-opacity duration-500`}
+                    />
+                    <CardHeader className="relative z-10 text-center pb-6">
+                      <div
+                        className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 transition-all duration-300 ${isSelected ? "bg-highlight/30" : "bg-highlight/20 group-hover:bg-highlight/30"}`}
+                      >
+                        <Icon className="h-10 w-10 text-highlight" />
+                      </div>
+                      <DisplaySM className="mb-4">{type.title}</DisplaySM>
+                      <BodyMedium className="text-gray-300">{type.description}</BodyMedium>
+                    </CardHeader>
+                    <CardContent className="relative z-10 pt-0">
+                      <ul className="space-y-4">
+                        {type.features.map((feature, index) => (
+                          <li key={index} className="flex items-center text-gray-300">
+                            <div className="w-2 h-2" style={{ backgroundColor: "#ffcb74" }} className="rounded-full mr-4 flex-shrink-0" />
+                            <span className="text-base">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </ModernCard>
+                )
+              })}
+            </div>
+            {/* Navigation */}
+            <div className="flex justify-between items-center">
+              <Button variant="ghost" onClick={() => router.push("/")} size="lg" className="text-[#ffcb74]">
+                <ArrowLeft className="mr-2 h-5 w-5" />
+                Back to Home
+              </Button>
+              <Button
+                onClick={handleContinue}
+                disabled={!selectedType}
+                size="lg"
+                className={`bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] transition-all duration-300 shadow-lg hover:shadow-xl ${!selectedType ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                Continue
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+        </main>
+        {/* Footer */}
+        <footer className="p-6 text-left text-gray-500 text-sm">
+          <p>&copy; 2024 StartupHub. Powered by AI. Built for the future.</p>
+        </footer>
       </div>
+      {/* Subtle gold gradient overlay for visual similarity */}
+      <div className="pointer-events-none fixed inset-0 z-0" style={{background: "radial-gradient(ellipse at 70% 30%, rgba(255,203,116,0.08) 0%, rgba(0,0,0,0.9) 70%)"}} />
     </div>
   )
 }
