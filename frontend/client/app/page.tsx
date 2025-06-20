@@ -16,6 +16,10 @@ export default function LandingPage() {
   const ringsRef = useRef<THREE.Group>(null)
   
   // Civic Auth hooks
+
+
+  
+            
   const { user, signIn, signOut } = useUser()
 
   useEffect(() => {

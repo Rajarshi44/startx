@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CivicAuthProvider } from "@civic/auth/react";
+import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +31,7 @@ export default function RootLayout({
       >
         <CivicAuthProvider clientId="591fba43-f526-4a18-b303-e0ad4dd98bd9">
         {children}
+        <Toaster />
         </CivicAuthProvider>
       </body>
     </html>
