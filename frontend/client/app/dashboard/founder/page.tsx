@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,6 +9,13 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Lightbulb, Users, TrendingUp, FileText, CheckCircle, Clock, Sparkles, Target, DollarSign } from "lucide-react"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import { ChartContainer } from "@/components/ui/chart"
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts"
+import { Tabs as ShadTabs, TabsList as ShadTabsList, TabsTrigger as ShadTabsTrigger, TabsContent as ShadTabsContent } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 
 export default function FounderDashboard() {
   const [ideaText, setIdeaText] = useState("")
@@ -19,6 +26,34 @@ export default function FounderDashboard() {
   const [skillsNeeded, setSkillsNeeded] = useState("")
   const [experienceLevel, setExperienceLevel] = useState("")
   const [progress, setProgress] = useState(25)
+  const [perplexityResult, setPerplexityResult] = useState<string | null>(null)
+  const [perplexityError, setPerplexityError] = useState<string | null>(null)
+  const [showCompanyModal, setShowCompanyModal] = useState(false)
+  const [companyForm, setCompanyForm] = useState({
+    name: "",
+    description: "",
+    industry: "",
+    stage: "",
+    level: "",
+    valuation: "",
+    match: "",
+    sector: ""
+  })
+  const [companyLoading, setCompanyLoading] = useState(false)
+  const [companyError, setCompanyError] = useState<string | null>(null)
+  const [companySuccess, setCompanySuccess] = useState(false)
+  const [ideaScore, setIdeaScore] = useState<number | null>(null)
+  const [showScore, setShowScore] = useState(false)
+  const [showFounderModal, setShowFounderModal] = useState(false)
+  const [founderDetails, setFounderDetails] = useState({
+    name: "",
+    email: "",
+    companyCount: "",
+    cofounders: ""
+  })
+  const [founderLoading, setFounderLoading] = useState(false)
+  const [founderError, setFounderError] = useState<string | null>(null)
+  const formRef = useRef<HTMLFormElement>(null)
 
   useEffect(() => {
     let completedTasks = 0
@@ -31,6 +66,12 @@ export default function FounderDashboard() {
     const newProgress = (completedTasks / totalTasks) * 100
     setProgress(newProgress)
   }, [validationComplete, cofounderResults.length])
+
+  useEffect(() => {
+    // TODO: Check if user has already been onboarded
+    // For now, show the modal on every page load
+    setShowFounderModal(true)
+  }, [])
 
   const mockProfiles = [
     {
@@ -65,10 +106,41 @@ export default function FounderDashboard() {
 
   const handleValidateIdea = async () => {
     setIsValidating(true)
-    setTimeout(() => {
+    setPerplexityResult(null)
+    setPerplexityError(null)
+    setValidationComplete(false)
+    setIdeaScore(null)
+    setShowScore(false)
+    try {
+      const res = await fetch("/api/perplexity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idea: ideaText }),
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        setPerplexityError(data.error || "Unknown error from Perplexity API")
+        setValidationComplete(false)
+      } else {
+        // Perplexity returns { choices: [{ message: { content: string } }] }
+        const content = data.choices?.[0]?.message?.content || "No research result returned."
+        setPerplexityResult(content)
+        setValidationComplete(true)
+        
+        // Calculate idea score from the content
+        const scoreMatch = content.match(/score[:\s]*(\d+(?:\.\d+)?)/i)
+        if (scoreMatch) {
+          const score = parseFloat(scoreMatch[1])
+          setIdeaScore(score)
+          setShowScore(true)
+        }
+      }
+    } catch (e: any) {
+      setPerplexityError(e.message || "Failed to validate idea.")
+      setValidationComplete(false)
+    } finally {
       setIsValidating(false)
-      setValidationComplete(true)
-    }, 3000)
+    }
   }
 
   const handleFindCofounders = () => {
@@ -79,6 +151,74 @@ export default function FounderDashboard() {
       setCofounderResults(shuffled.slice(0, 3))
       setIsMatching(false)
     }, 1800)
+  }
+
+  const handleCompanyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setCompanyForm({ ...companyForm, [e.target.name]: e.target.value })
+  }
+
+  const handleCreateCompany = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCompanyLoading(true)
+    setCompanyError(null)
+    setCompanySuccess(false)
+    try {
+      const res = await fetch("/api/company", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(companyForm),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        setCompanyError(data.error || "Failed to create company.")
+      } else {
+        setCompanySuccess(true)
+        setShowCompanyModal(false)
+        setCompanyForm({
+          name: "",
+          description: "",
+          industry: "",
+          stage: "",
+          level: "",
+          valuation: "",
+          match: "",
+          sector: ""
+        })
+      }
+    } catch (e: any) {
+      setCompanyError(e.message || "Failed to create company.")
+    } finally {
+      setCompanyLoading(false)
+    }
+  }
+
+  const handleFounderDetailsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFounderDetails({ ...founderDetails, [e.target.name]: e.target.value })
+  }
+
+  const handleFounderDetailsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFounderLoading(true)
+    setFounderError(null)
+    try {
+      // Assuming a Civic ID is available from a user session/context
+      const civicId = "YOUR_CIVIC_ID_HERE" // Replace with actual Civic ID
+      const res = await fetch("/api/user/update-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...founderDetails, civicId, role: "founder" }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        setFounderError(data.error || "Failed to save details.")
+      } else {
+        setShowFounderModal(false)
+      }
+    } catch (e: any) {
+      setFounderError(e.message || "Failed to save details.")
+    } finally {
+      setFounderLoading(false)
+    }
   }
 
   return (
@@ -175,30 +315,134 @@ export default function FounderDashboard() {
                   </CardContent>
                 </Card>
 
-                {validationComplete && (
+                {isValidating && (
+                  <div className="flex justify-center py-8 animate-fade-in">
+                    <div className="flex flex-col items-center space-y-4">
+                      <div className="w-16 h-16 border-2 border-amber-500/30 border-t-amber-400 rounded-full animate-spin" />
+                      <div className="font-light text-amber-400 tracking-wide animate-pulse">
+                        Researching your idea ..
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {perplexityError && (
+                  <Card className="border border-red-500/30 rounded-2xl bg-black/80 backdrop-blur-sm animate-slide-in-up shadow-2xl shadow-red-500/10">
+                    <CardHeader>
+                      <CardTitle className="text-red-400 font-light text-xl">Validation Error</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-red-300 font-light">{perplexityError}</div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {validationComplete && perplexityResult && (
                   <Card className="border border-amber-500/30 rounded-2xl bg-black/80 backdrop-blur-sm animate-slide-in-up shadow-2xl shadow-amber-500/10">
                     <CardHeader>
                       <CardTitle className="text-white font-light text-xl">Validation Results</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="grid md:grid-cols-3 gap-6">
-                        {[
-                          { score: "8.5/10", label: "Market Potential" },
-                          { score: "7.2/10", label: "Competition Level" },
-                          { score: "9.1/10", label: "Innovation Score" },
-                        ].map((item, index) => (
-                          <div
-                            key={item.label}
-                            className="text-center p-6 rounded-xl bg-black/30 border border-amber-500/20 hover:border-amber-500/40 transition-all duration-300 animate-fade-in"
-                            style={{ animationDelay: `${index * 200}ms` }}
-                          >
-                            <div className="text-3xl font-light mb-2 text-amber-400 animate-number-count">
-                              {item.score}
-                            </div>
-                            <div className="text-sm text-gray-300 font-light tracking-wide">{item.label}</div>
+                      {showScore && ideaScore && (
+                        <div className={`text-center py-6 ${ideaScore >= 7 ? 'text-green-400' : 'text-amber-400'}`}>
+                          <div className="text-6xl font-bold mb-2">
+                            {ideaScore}/10
                           </div>
-                        ))}
-                      </div>
+                          <div className="text-xl font-semibold mb-2">
+                            Idea Score
+                          </div>
+                          {ideaScore >= 7 && (
+                            <div className="text-lg text-green-300 mt-4 p-4 bg-green-500/10 rounded-xl border border-green-500/30">
+                              🎉 Excellent! This idea shows strong potential. Consider creating a company profile to track your progress.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardHeader>
+                    <CardContent className="prose prose-invert max-w-none text-white">
+                      {(() => {
+                        // Parse markdown into sections
+                        const sectionOrder = [
+                          "Market Demand",
+                          "SWOT Analysis",
+                          "Competitor Analysis",
+                          "Similar Companies",
+                          "Suggestions for Improvement",
+                          "Key Analytics and Scores"
+                        ];
+                        const sectionRegex = /## ([^\n]+)\n([\s\S]*?)(?=\n## |$)/g;
+                        const sections: Record<string, string> = {};
+                        let match;
+                        while ((match = sectionRegex.exec(perplexityResult))) {
+                          sections[match[1].trim()] = match[2].trim();
+                        }
+                        // Chart data for Key Analytics and Scores
+                        const chartData = [
+                          {
+                            name: "Online Books",
+                            value: 26.04,
+                            label: "Books 2025 ($B)"
+                          },
+                          {
+                            name: "Books 2034",
+                            value: 48.27,
+                            label: "Books 2034 ($B)"
+                          },
+                          {
+                            name: "E-Book Subscriptions",
+                            value: 8.7,
+                            label: "E-Book Subs 2033 ($B)"
+                          },
+                          {
+                            name: "CAGR",
+                            value: 7.1,
+                            label: "Books CAGR (%)"
+                          },
+                          {
+                            name: "E-Book CAGR",
+                            value: 9.5,
+                            label: "E-Book CAGR (%)"
+                          }
+                        ];
+                        const barColors = ["#fbbf24", "#f59e42", "#fcd34d", "#a3e635", "#38bdf8"];
+                        return (
+                          <ShadTabs defaultValue={sectionOrder[0]} className="w-full">
+                            <ShadTabsList className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-6 bg-black/30 border border-amber-500/20 rounded-xl">
+                              {sectionOrder.map((section: string) => (
+                                <ShadTabsTrigger
+                                  key={section}
+                                  value={section}
+                                  className="text-gray-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-400 data-[state=active]:to-amber-500 data-[state=active]:text-black rounded-lg transition-all duration-300 hover:text-white font-light tracking-wide capitalize"
+                                >
+                                  {section}
+                                </ShadTabsTrigger>
+                              ))}
+                            </ShadTabsList>
+                            {sectionOrder.map((section: string) => (
+                              <ShadTabsContent key={section} value={section} className="pt-2">
+                                {section === "Key Analytics and Scores" && (
+                                  <div className="mb-8">
+                                    <h3 className="text-lg font-semibold mb-4 text-amber-400">Key Analytics and Scores</h3>
+                                    <ChartContainer config={{ Books: { color: barColors[0] }, Books2034: { color: barColors[1] }, EBook: { color: barColors[2] }, CAGR: { color: barColors[3] }, EBookCAGR: { color: barColors[4] } }}>
+                                      <ResponsiveContainer width="100%" height={220}>
+                                        <BarChart data={chartData} margin={{ left: 16, right: 16, top: 16, bottom: 8 }}>
+                                          <XAxis dataKey="label" tick={{ fill: "#fff", fontSize: 13 }} axisLine={false} tickLine={false} />
+                                          <YAxis tick={{ fill: "#fff", fontSize: 13 }} axisLine={false} tickLine={false} />
+                                          <Tooltip contentStyle={{ background: "#222", border: "none", color: "#fff" }} cursor={{ fill: "#fbbf2433" }} />
+                                          <Bar dataKey="value">
+                                            {chartData.map((entry, i) => (
+                                              <Cell key={entry.name} fill={barColors[i]} />
+                                            ))}
+                                          </Bar>
+                                        </BarChart>
+                                      </ResponsiveContainer>
+                                    </ChartContainer>
+                                  </div>
+                                )}
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{sections[section] || "No data."}</ReactMarkdown>
+                              </ShadTabsContent>
+                            ))}
+                          </ShadTabs>
+                        );
+                      })()}
                     </CardContent>
                   </Card>
                 )}
@@ -287,7 +531,7 @@ export default function FounderDashboard() {
                             <AvatarFallback className="bg-gradient-to-br from-amber-400 to-amber-500 text-black font-light">
                               {profile.name
                                 .split(" ")
-                                .map((n) => n[0])
+                                .map((n: string) => n[0])
                                 .join("")}
                             </AvatarFallback>
                           </Avatar>
@@ -488,6 +732,18 @@ export default function FounderDashboard() {
                 <CardTitle className="text-xl font-light text-white">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <Button
+                  variant="outline"
+                  className={`w-full justify-start border rounded-xl transition-all duration-300 font-light animate-slide-in ${
+                    ideaScore && ideaScore >= 7
+                      ? 'border-green-500/60 bg-green-500/10 text-green-300 hover:text-white hover:bg-green-500/20'
+                      : 'border-amber-500/20 bg-black/30 text-gray-300 hover:text-white hover:bg-amber-500/10'
+                  }`}
+                  style={{ animationDelay: `0ms` }}
+                  onClick={() => setShowCompanyModal(true)}
+                >
+                  {ideaScore && ideaScore >= 7 ? '🚀 Create Company (Recommended)' : '+ Create Company'}
+                </Button>
                 {[
                   { icon: Target, text: "Market Research" },
                   { icon: Users, text: "Browse Co-founders" },
@@ -547,6 +803,91 @@ export default function FounderDashboard() {
           </div>
         </div>
       </div>
+      <Dialog open={showCompanyModal} onOpenChange={setShowCompanyModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Create Company</DialogTitle>
+          </DialogHeader>
+          <form ref={formRef} onSubmit={handleCreateCompany} className="space-y-4">
+            <div>
+              <Label htmlFor="name">Name</Label>
+              <Input name="name" value={companyForm.name} onChange={handleCompanyChange} required className="mt-1" />
+            </div>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea name="description" value={companyForm.description} onChange={handleCompanyChange} className="mt-1" />
+            </div>
+            <div>
+              <Label htmlFor="industry">Industry</Label>
+              <Input name="industry" value={companyForm.industry} onChange={handleCompanyChange} className="mt-1" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="stage">Stage</Label>
+                <Input name="stage" value={companyForm.stage} onChange={handleCompanyChange} className="mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="level">Level</Label>
+                <Input name="level" value={companyForm.level} onChange={handleCompanyChange} className="mt-1" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="valuation">Valuation</Label>
+                <Input name="valuation" value={companyForm.valuation} onChange={handleCompanyChange} type="number" min="0" step="any" className="mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="match">Match</Label>
+                <Input name="match" value={companyForm.match} onChange={handleCompanyChange} type="number" min="0" max="100" step="any" className="mt-1" />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="sector">Sector</Label>
+              <Input name="sector" value={companyForm.sector} onChange={handleCompanyChange} className="mt-1" />
+            </div>
+            {companyError && <div className="text-red-400 text-sm">{companyError}</div>}
+            <DialogFooter>
+              <Button type="submit" disabled={companyLoading} className="bg-amber-500 text-black hover:bg-amber-600">
+                {companyLoading ? "Creating..." : "Create Company"}
+              </Button>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Cancel</Button>
+              </DialogClose>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showFounderModal} onOpenChange={setShowFounderModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Founder Details</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleFounderDetailsSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="name">Full Name</Label>
+              <Input name="name" value={founderDetails.name} onChange={handleFounderDetailsChange} required className="mt-1" />
+            </div>
+            <div>
+              <Label htmlFor="email">Email Address</Label>
+              <Input name="email" type="email" value={founderDetails.email} onChange={handleFounderDetailsChange} required className="mt-1" />
+            </div>
+            <div>
+              <Label htmlFor="companyCount">Number of Companies Founded</Label>
+              <Input name="companyCount" type="number" min="0" value={founderDetails.companyCount} onChange={handleFounderDetailsChange} className="mt-1" />
+            </div>
+            <div>
+              <Label htmlFor="cofounders">Co-founder List (one per line)</Label>
+              <Textarea name="cofounders" value={founderDetails.cofounders} onChange={handleFounderDetailsChange} className="mt-1" />
+            </div>
+            {founderError && <div className="text-red-400 text-sm">{founderError}</div>}
+            <DialogFooter>
+              <Button type="submit" disabled={founderLoading} className="bg-amber-500 text-black hover:bg-amber-600">
+                {founderLoading ? "Saving..." : "Save Details"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

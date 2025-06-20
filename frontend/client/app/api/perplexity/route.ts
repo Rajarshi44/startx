@@ -1,10 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/utils/supabase/server';
+import { cookies } from 'next/headers';
 
 export async function POST(req: NextRequest) {
-  const { idea } = await req.json();
+  const { idea, userId } = await req.json();
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: 'Missing Perplexity API key' }, { status: 500 });
+  }
+
+  // Create Supabase client
+  const cookieStore = cookies();
+  const supabase = await createClient(cookieStore);
+
+  // 1. Check for existing validation
+  if (userId) {
+    const { data: existing, error: fetchError } = await supabase
+      .from('idea_validations')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('idea', idea)
+      .single();
+    if (existing && existing.result) {
+      return NextResponse.json(existing.result, { status: 200 });
+    }
   }
 
   try {
@@ -31,6 +50,14 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await perplexityRes.json();
+
+    // 2. Store the result
+    if (userId) {
+      await supabase.from('idea_validations').insert([
+        { user_id: userId, idea, result: data }
+      ]);
+    }
+
     return NextResponse.json(data, { status: perplexityRes.status });
   } catch (e: any) {
     return NextResponse.json({ error: e.message || 'Perplexity API error' }, { status: 500 });
