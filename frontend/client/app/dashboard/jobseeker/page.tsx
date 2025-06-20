@@ -1,408 +1,931 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Users, Briefcase, MessageSquare, MapPin, Clock, DollarSign, CheckCircle, Play } from "lucide-react"
+import type React from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Camera,
+  Upload,
+  User,
+  Heart,
+  ChevronRight,
+  ChevronLeft,
+  CheckCircle,
+  FileText,
+  Sparkles,
+  X,
+  GraduationCap,
+  Target,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
 
-export default function JobSeekerDashboard() {
-  const [isInterviewActive, setIsInterviewActive] = useState(false)
+export default function JobSeekerOnboarding() {
+  type JobSeekerData = {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    city: string;
+    country: string;
+    dateOfBirth: string;
+    gender: string;
+    languages: string[];
+    profilePicture: File | null;
+    currentStatus: string;
+    experience: string;
+    education: string;
+    university: string;
+    graduationYear: string;
+    skills: string[];
+    resume: File | null;
+    portfolio: string;
+    linkedIn: string;
+    github: string;
+    interests: string[];
+    careerGoals: string[];
+    jobTypes: string[];
+    workModes: string[];
+    salaryExpectation: string;
+    availability: string;
+    relocate: string;
+    bio: string;
+    achievements: string[];
+    certifications: string[];
+  };
 
-  const startInterview = () => {
-    setIsInterviewActive(true)
-  }
+  const [step, setStep] = useState(1);
+  const [data, setData] = useState<JobSeekerData>({
+    // Personal Information
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    city: "",
+    country: "India",
+    dateOfBirth: "",
+    gender: "",
+    languages: ["English"],
+    profilePicture: null,
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Job Seeker Dashboard</h1>
-              <p className="text-gray-600">Find your perfect role in exciting startups</p>
-            </div>
-            <Badge className="bg-blue-100 text-blue-700">Job Seeker Journey</Badge>
+    // Professional Information
+    currentStatus: "",
+    experience: "",
+    education: "",
+    university: "",
+    graduationYear: "",
+    skills: [],
+    resume: null,
+    portfolio: "",
+    linkedIn: "",
+    github: "",
+
+    // Preferences
+    interests: [],
+    careerGoals: [],
+    jobTypes: [],
+    workModes: [],
+    salaryExpectation: "",
+    availability: "",
+    relocate: "",
+
+    // Additional
+    bio: "",
+    achievements: [],
+    certifications: [],
+  });
+
+  const languages = [
+    "English",
+    "Hindi",
+    "Bengali",
+    "Telugu",
+    "Tamil",
+    "Marathi",
+    "Gujarati",
+    "Kannada",
+    "Malayalam",
+    "Punjabi",
+    "French",
+    "German",
+    "Spanish",
+    "Japanese",
+    "Mandarin",
+  ];
+
+  const statusOptions = [
+    "Student",
+    "Recent Graduate",
+    "Fresher",
+    "Experienced Professional",
+    "Career Changer",
+    "Returning to Work",
+  ];
+
+  const experienceOptions = [
+    "0-1 years",
+    "1-3 years",
+    "3-5 years",
+    "5-10 years",
+    "10+ years",
+  ];
+
+  const educationOptions = [
+    "High School",
+    "Diploma",
+    "Bachelor's Degree",
+    "Master's Degree",
+    "PhD",
+    "Professional Certification",
+  ];
+
+  const techSkills = [
+    "JavaScript",
+    "Python",
+    "Java",
+    "React",
+    "Node.js",
+    "Angular",
+    "Vue.js",
+    "TypeScript",
+    "PHP",
+    "C++",
+    "C#",
+    "Ruby",
+    "Go",
+    "Swift",
+    "Kotlin",
+    "Flutter",
+    "React Native",
+    "HTML/CSS",
+    "SQL",
+    "MongoDB",
+    "PostgreSQL",
+    "AWS",
+    "Docker",
+    "Kubernetes",
+    "Machine Learning",
+    "Data Science",
+    "AI",
+    "Blockchain",
+    "DevOps",
+    "UI/UX Design",
+  ];
+
+  const careerInterests = [
+    "Software Development",
+    "Web Development",
+    "Mobile App Development",
+    "Data Science",
+    "Machine Learning",
+    "AI/ML Engineering",
+    "DevOps",
+    "Cloud Computing",
+    "Cybersecurity",
+    "UI/UX Design",
+    "Product Management",
+    "Project Management",
+    "Digital Marketing",
+    "Content Writing",
+    "Graphic Design",
+    "Sales",
+    "Business Development",
+    "HR",
+    "Finance",
+    "Consulting",
+    "Research",
+    "Teaching",
+    "Healthcare",
+    "Legal",
+  ];
+
+  const jobTypeOptions = [
+    "Full-time",
+    "Part-time",
+    "Contract",
+    "Freelance",
+    "Internship",
+    "Temporary",
+  ];
+
+  const workModeOptions = ["Remote", "On-site", "Hybrid"];
+
+  const router = useRouter();
+
+  const update = <K extends keyof JobSeekerData>(
+    key: K,
+    value: JobSeekerData[K]
+  ) => setData((prev) => ({ ...prev, [key]: value }));
+
+  const toggle = <K extends keyof JobSeekerData>(key: K, value: string) => {
+    setData((prev) => ({
+      ...prev,
+      [key]: Array.isArray(prev[key])
+        ? (prev[key] as string[]).includes(value)
+          ? (prev[key] as string[]).filter((item) => item !== value)
+          : [...(prev[key] as string[]), value]
+        : prev[key],
+    }));
+  };
+
+  const SelectableCard = ({
+    children,
+    selected,
+    onClick,
+    className = "",
+  }: {
+    children: React.ReactNode;
+    selected: boolean;
+    onClick: () => void;
+    className?: string;
+  }) => (
+    <Card
+      onClick={onClick}
+      className={`cursor-pointer transition-all duration-300 hover:scale-105 ${
+        selected
+          ? "border-[#ffcb74] bg-[#ffcb74]/10 shadow-lg ring-2 ring-[#ffcb74]/50"
+          : "border-[#111111] bg-[#111111] hover:border-[#ffcb74]/50 hover:shadow-md"
+      } ${className}`}
+    >
+      <CardContent className="p-4 text-[#f6f6f6]">{children}</CardContent>
+    </Card>
+  );
+
+  const FormSection = ({
+    title,
+    description,
+    children,
+  }: {
+    title: string;
+    description?: string;
+    children: React.ReactNode;
+  }) => (
+    <Card className="bg-[#111111]/80 backdrop-blur-sm border-[#ffcb74]/20 shadow-xl">
+      <CardContent className="p-8">
+        <div className="mb-6">
+          <h3 className="text-xl font-bold text-[#f6f6f6] mb-2">{title}</h3>
+          {description && <p className="text-[#f6f6f6]/70">{description}</p>}
+        </div>
+        {children}
+      </CardContent>
+    </Card>
+  );
+
+  const FileUpload = ({
+    file,
+    onUpload,
+    onRemove,
+    accept,
+    icon: Icon,
+    title,
+    description,
+  }: {
+    file: File | null;
+    onUpload: (file: File) => void;
+    onRemove: () => void;
+    accept: string;
+    icon: React.ComponentType<any>;
+    title: string;
+    description: string;
+  }) => (
+    <div className="relative group">
+      {file ? (
+        <div className="flex items-center gap-4 p-4 bg-[#ffcb74]/10 border-2 border-[#ffcb74] rounded-2xl">
+          <div className="w-12 h-12 bg-[#ffcb74]/20 rounded-xl flex items-center justify-center">
+            <Icon className="w-6 h-6 text-[#ffcb74]" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-[#f6f6f6]">{file.name}</p>
+            <p className="text-sm text-[#f6f6f6]/70">
+              {(file.size / 1024 / 1024).toFixed(2)} MB
+            </p>
+          </div>
+          <Button
+            onClick={onRemove}
+            variant="outline"
+            className="bg-[#111111] text-[#f6f6f6] border-[#ffcb74] hover:bg-[#ffcb74] hover:text-[#111111]"
+          >
+            <X className="w-4 h-4 text-rose-600" />
+          </Button>
+        </div>
+      ) : (
+        <label className="block cursor-pointer">
+          <div className="p-8 border-2 border-dashed border-[#ffcb74]/50 rounded-2xl text-center hover:border-[#ffcb74] hover:bg-[#ffcb74]/5 transition-all duration-300 group-hover:scale-[1.02]">
+            <Icon className="w-12 h-12 text-[#ffcb74]/70 mx-auto mb-4 group-hover:text-[#ffcb74] transition-colors" />
+            <p className="font-semibold text-[#f6f6f6] mb-2">{title}</p>
+            <p className="text-sm text-[#f6f6f6]/70">{description}</p>
+          </div>
+          <input
+            type="file"
+            accept={accept}
+            onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])}
+            className="hidden"
+          />
+        </label>
+      )}
+    </div>
+  );
+
+  const ProgressBar = () => (
+    <div className="relative w-full bg-[#111111] rounded-full h-3 mb-8 overflow-hidden">
+      <div
+        className="h-full bg-[#ffcb74] rounded-full transition-all duration-700 relative progress-bar"
+        style={
+          { "--progress-width": `${(step / 4) * 100}%` } as React.CSSProperties
+        }
+      >
+        <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+      </div>
+    </div>
+  );
+
+  const StepHeader = () => {
+    const steps = [
+      {
+        title: "Personal Information",
+        desc: "Tell us about yourself",
+        icon: User,
+      },
+      {
+        title: "Professional Background",
+        desc: "Your education and experience",
+        icon: GraduationCap,
+      },
+      {
+        title: "Skills & Interests",
+        desc: "What you're passionate about",
+        icon: Heart,
+      },
+      {
+        title: "Job Preferences",
+        desc: "What you're looking for",
+        icon: Target,
+      },
+    ];
+    const current = steps[step - 1];
+    const Icon = current.icon;
+
+    return (
+      <div className="text-center mb-12">
+        <div className="inline-flex items-center gap-3 bg-[#111111] px-6 py-3 rounded-full mb-6">
+          <Icon className="w-5 h-5 text-[#ffcb74]" />
+          <span className="font-bold text-[#ffcb74]">Step {step} of 4</span>
+        </div>
+        <h1 className="text-5xl font-black text-[#f6f6f6] mb-4">
+          {current.title}
+        </h1>
+        <p className="text-xl text-[#f6f6f6]/80 font-medium">{current.desc}</p>
+      </div>
+    );
+  };
+
+  const Step1 = () => (
+    <div className="space-y-8">
+      <FormSection
+        title="Basic Information"
+        description="Let's start with the essentials"
+      >
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-[#f6f6f6]">
+              First Name *
+            </label>
+            <Input
+              value={data.firstName}
+              onChange={(e) => update("firstName", e.target.value)}
+              placeholder="Enter your first name"
+              className="h-12 bg-[#111111] border-[#ffcb74]/30 text-[#f6f6f6] placeholder:text-[#f6f6f6]/50 focus:border-[#ffcb74] focus:ring-[#ffcb74]"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-[#f6f6f6]">
+              Last Name
+            </label>
+            <Input
+              value={data.lastName}
+              onChange={(e) => update("lastName", e.target.value)}
+              placeholder="Enter your last name"
+              className="h-12 bg-[#111111] border-[#ffcb74]/30 text-[#f6f6f6] placeholder:text-[#f6f6f6]/50 focus:border-[#ffcb74] focus:ring-[#ffcb74]"
+            />
           </div>
         </div>
-      </header>
+      </FormSection>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2">
-            <Tabs defaultValue="profile" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="profile">Profile</TabsTrigger>
-                <TabsTrigger value="jobs">Jobs</TabsTrigger>
-                <TabsTrigger value="interview">Interview</TabsTrigger>
-                <TabsTrigger value="applications">Applications</TabsTrigger>
-              </TabsList>
+      <FormSection
+        title="Profile Picture"
+        description="Add a professional photo to make a great first impression"
+      >
+        <div className="flex items-center gap-6">
+          <div className="w-24 h-24 bg-[#ffcb74]/20 rounded-3xl border-4 border-[#ffcb74] shadow-lg flex items-center justify-center overflow-hidden">
+            {data.profilePicture ? (
+              <img
+                src={
+                  URL.createObjectURL(data.profilePicture) || "/placeholder.svg"
+                }
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Camera className="w-8 h-8 text-[#ffcb74]" />
+            )}
+          </div>
+          <div className="flex gap-3">
+            <label className="cursor-pointer">
+              <Button className="bg-[#111111] hover:bg-[#111111]/80 text-[#f6f6f6] border-[#ffcb74]">
+                <Upload className="w-4 h-4 mr-2" />
+                Upload Photo
+              </Button>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  e.target.files?.[0] &&
+                  update("profilePicture", e.target.files[0])
+                }
+                className="hidden"
+              />
+            </label>
+            {data.profilePicture && (
+              <Button
+                onClick={() => update("profilePicture", null)}
+                variant="outline"
+                className="bg-[#111111] text-[#f6f6f6] border-[#ffcb74] hover:bg-[#ffcb74] hover:text-[#111111]"
+              >
+                Remove
+              </Button>
+            )}
+          </div>
+        </div>
+      </FormSection>
 
-              <TabsContent value="profile" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Users className="mr-2 h-5 w-5 text-blue-600" />
-                      Professional Profile
-                    </CardTitle>
-                    <CardDescription>Complete your profile to get better job matches</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Full Name</label>
-                        <Input placeholder="Your full name" />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Job Title</label>
-                        <Input placeholder="e.g., Software Engineer" />
-                      </div>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Experience Level</label>
-                        <Input placeholder="e.g., 3-5 years" />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Location</label>
-                        <Input placeholder="e.g., San Francisco, Remote" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Skills</label>
-                      <Input placeholder="e.g., React, Node.js, Python, Machine Learning" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Salary Expectation</label>
-                      <Input placeholder="e.g., $80,000 - $120,000" />
-                    </div>
-                    <Button className="bg-blue-600 hover:bg-blue-700">Update Profile</Button>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+      <FormSection title="Contact Information">
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-[#f6f6f6]">
+              Email Address *
+            </label>
+            <Input
+              type="email"
+              value={data.email}
+              onChange={(e) => update("email", e.target.value)}
+              placeholder="your@email.com"
+              className="h-12 bg-[#111111] border-[#ffcb74]/30 text-[#f6f6f6] placeholder:text-[#f6f6f6]/50 focus:border-[#ffcb74] focus:ring-[#ffcb74]"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-[#f6f6f6]">
+              Phone Number *
+            </label>
+            <Input
+              type="tel"
+              value={data.phone}
+              onChange={(e) => update("phone", e.target.value)}
+              placeholder="+91 98765 43210"
+              className="h-12 bg-[#111111] border-[#ffcb74]/30 text-[#f6f6f6] placeholder:text-[#f6f6f6]/50 focus:border-[#ffcb74] focus:ring-[#ffcb74]"
+            />
+          </div>
+        </div>
+      </FormSection>
 
-              <TabsContent value="jobs" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Briefcase className="mr-2 h-5 w-5 text-green-600" />
-                      Recommended Jobs
-                    </CardTitle>
-                    <CardDescription>Jobs matched to your skills and preferences</CardDescription>
-                  </CardHeader>
-                </Card>
-
-                <div className="space-y-4">
-                  {[
-                    {
-                      title: "Senior Frontend Developer",
-                      company: "TechFlow AI",
-                      location: "San Francisco, CA",
-                      salary: "$120K - $160K",
-                      match: "95%",
-                      type: "Full-time",
-                      posted: "2 days ago",
-                      skills: ["React", "TypeScript", "Next.js"],
-                    },
-                    {
-                      title: "Full Stack Engineer",
-                      company: "DataVision",
-                      location: "Remote",
-                      salary: "$100K - $140K",
-                      match: "88%",
-                      type: "Full-time",
-                      posted: "1 week ago",
-                      skills: ["Node.js", "Python", "AWS"],
-                    },
-                    {
-                      title: "Product Manager",
-                      company: "StartupX",
-                      location: "New York, NY",
-                      salary: "$110K - $150K",
-                      match: "82%",
-                      type: "Full-time",
-                      posted: "3 days ago",
-                      skills: ["Product Strategy", "Analytics", "Agile"],
-                    },
-                  ].map((job, index) => (
-                    <Card key={index} className="border-green-200 hover:shadow-md transition-shadow">
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div>
-                            <h3 className="text-lg font-semibold mb-1">{job.title}</h3>
-                            <p className="text-blue-600 font-medium mb-2">{job.company}</p>
-                            <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
-                              <div className="flex items-center">
-                                <MapPin className="h-4 w-4 mr-1" />
-                                {job.location}
-                              </div>
-                              <div className="flex items-center">
-                                <DollarSign className="h-4 w-4 mr-1" />
-                                {job.salary}
-                              </div>
-                              <div className="flex items-center">
-                                <Clock className="h-4 w-4 mr-1" />
-                                {job.posted}
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap gap-2 mb-3">
-                              {job.skills.map((skill, skillIndex) => (
-                                <Badge key={skillIndex} variant="secondary" className="text-xs">
-                                  {skill}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-2xl font-bold text-green-600 mb-1">{job.match}</div>
-                            <div className="text-xs text-gray-500 mb-3">Match</div>
-                            <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                              Apply Now
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="interview" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <MessageSquare className="mr-2 h-5 w-5 text-purple-600" />
-                      AI Interview Practice
-                    </CardTitle>
-                    <CardDescription>Practice with our AI interviewer and get real-time feedback</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {!isInterviewActive ? (
-                      <div className="text-center py-8">
-                        <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Play className="h-10 w-10 text-purple-600" />
-                        </div>
-                        <h3 className="text-lg font-semibold mb-2">Ready to Practice?</h3>
-                        <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                          Our AI interviewer will ask you common interview questions and provide feedback on your
-                          responses.
-                        </p>
-                        <div className="grid md:grid-cols-3 gap-4 mb-6">
-                          <div className="text-center p-4 bg-gray-50 rounded-lg">
-                            <div className="text-2xl font-bold text-purple-600 mb-1">15</div>
-                            <div className="text-sm text-gray-600">Minutes</div>
-                          </div>
-                          <div className="text-center p-4 bg-gray-50 rounded-lg">
-                            <div className="text-2xl font-bold text-blue-600 mb-1">8</div>
-                            <div className="text-sm text-gray-600">Questions</div>
-                          </div>
-                          <div className="text-center p-4 bg-gray-50 rounded-lg">
-                            <div className="text-2xl font-bold text-green-600 mb-1">AI</div>
-                            <div className="text-sm text-gray-600">Feedback</div>
-                          </div>
-                        </div>
-                        <Button onClick={startInterview} className="bg-purple-600 hover:bg-purple-700">
-                          Start Interview Practice
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <div className="bg-purple-50 p-4 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-purple-700">Interview in Progress</span>
-                            <span className="text-sm text-purple-600">Question 1 of 8</span>
-                          </div>
-                          <Progress value={12.5} className="h-2 mb-4" />
-                          <div className="bg-white p-4 rounded-lg mb-4">
-                            <p className="font-medium mb-2">AI Interviewer:</p>
-                            <p className="text-gray-700">
-                              "Tell me about yourself and why you're interested in working at a startup."
-                            </p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                            <span className="text-sm text-gray-600">Recording your response...</span>
-                          </div>
-                        </div>
-                        <div className="flex justify-between">
-                          <Button variant="outline" className="bg-white text-gray-600">
-                            Pause
-                          </Button>
-                          <Button className="bg-purple-600 hover:bg-purple-700">Next Question</Button>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Previous Interview Results */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Previous Practice Sessions</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {[
-                        { date: "Dec 15, 2024", score: 8.5, feedback: "Great technical answers" },
-                        { date: "Dec 10, 2024", score: 7.2, feedback: "Work on behavioral questions" },
-                      ].map((session, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div>
-                            <div className="font-medium">{session.date}</div>
-                            <div className="text-sm text-gray-600">{session.feedback}</div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-green-600">{session.score}/10</div>
-                            <div className="text-xs text-gray-500">Score</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="applications" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Briefcase className="mr-2 h-5 w-5 text-orange-600" />
-                      Application Status
-                    </CardTitle>
-                    <CardDescription>Track your job applications and their progress</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {[
-                        {
-                          company: "TechFlow AI",
-                          position: "Senior Frontend Developer",
-                          status: "Interview Scheduled",
-                          date: "Applied 5 days ago",
-                          statusColor: "text-blue-600 bg-blue-100",
-                        },
-                        {
-                          company: "DataVision",
-                          position: "Full Stack Engineer",
-                          status: "Under Review",
-                          date: "Applied 1 week ago",
-                          statusColor: "text-yellow-600 bg-yellow-100",
-                        },
-                        {
-                          company: "StartupX",
-                          position: "Product Manager",
-                          status: "Applied",
-                          date: "Applied 2 days ago",
-                          statusColor: "text-gray-600 bg-gray-100",
-                        },
-                      ].map((app, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                          <div>
-                            <h4 className="font-semibold">{app.position}</h4>
-                            <p className="text-sm text-gray-600 mb-1">{app.company}</p>
-                            <p className="text-xs text-gray-500">{app.date}</p>
-                          </div>
-                          <div className="text-right">
-                            <Badge className={`${app.statusColor} text-xs`}>{app.status}</Badge>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+      <FormSection title="Location & Personal Details">
+        <div className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-[#f6f6f6]">
+                Current City
+              </label>
+              <Input
+                value={data.city}
+                onChange={(e) => update("city", e.target.value)}
+                placeholder="Enter your city"
+                className="h-12 bg-[#111111] border-[#ffcb74]/30 text-[#f6f6f6] placeholder:text-[#f6f6f6]/50 focus:border-[#ffcb74] focus:ring-[#ffcb74]"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-[#f6f6f6]">
+                Date of Birth
+              </label>
+              <Input
+                type="date"
+                value={data.dateOfBirth}
+                onChange={(e) => update("dateOfBirth", e.target.value)}
+                className="h-12 bg-[#111111] border-[#ffcb74]/30 text-[#f6f6f6] placeholder:text-[#f6f6f6]/50 focus:border-[#ffcb74] focus:ring-[#ffcb74]"
+              />
+            </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Profile Completion */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Profile Completion</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span>Profile Strength</span>
-                    <span>75%</span>
-                  </div>
-                  <Progress value={75} className="h-2" />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    <span>Basic info added</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    <span>Skills listed</span>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Clock className="h-4 w-4 mr-2" />
-                    <span>Add portfolio</span>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Clock className="h-4 w-4 mr-2" />
-                    <span>Upload resume</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Job Alerts */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Job Alerts</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <div className="font-medium text-blue-800 mb-1">3 New Matches</div>
-                    <div className="text-sm text-blue-600">Frontend Developer roles</div>
-                  </div>
-                  <div className="p-3 bg-green-50 rounded-lg">
-                    <div className="font-medium text-green-800 mb-1">Interview Tip</div>
-                    <div className="text-sm text-green-600">Practice behavioral questions</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Stats */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Your Stats</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">12</div>
-                    <div className="text-sm text-gray-600">Applications</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">3</div>
-                    <div className="text-sm text-gray-600">Interviews</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">8.2</div>
-                    <div className="text-sm text-gray-600">Avg Score</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">95%</div>
-                    <div className="text-sm text-gray-600">Top Match</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-[#f6f6f6]">
+              Gender
+            </label>
+            <div className="grid grid-cols-3 gap-4">
+              {["Male", "Female", "Other"].map((option) => (
+                <SelectableCard
+                  key={option}
+                  selected={data.gender === option}
+                  onClick={() => update("gender", option)}
+                  className="text-center"
+                >
+                  <span className="font-semibold">{option}</span>
+                </SelectableCard>
+              ))}
+            </div>
           </div>
+
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-[#f6f6f6]">
+              Languages You Know
+            </label>
+            <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+              {languages.map((lang) => (
+                <SelectableCard
+                  key={lang}
+                  selected={data.languages.includes(lang)}
+                  onClick={() => toggle("languages", lang)}
+                  className="text-center"
+                >
+                  <span className="font-medium text-sm">{lang}</span>
+                </SelectableCard>
+              ))}
+            </div>
+          </div>
+        </div>
+      </FormSection>
+    </div>
+  );
+
+  const Step2 = () => (
+    <div className="space-y-8">
+      <FormSection
+        title="Current Status"
+        description="Help us understand where you are in your career"
+      >
+        <div className="grid md:grid-cols-2 gap-4">
+          {statusOptions.map((status) => (
+            <SelectableCard
+              key={status}
+              selected={data.currentStatus === status}
+              onClick={() => update("currentStatus", status)}
+            >
+              <span className="font-semibold">{status}</span>
+            </SelectableCard>
+          ))}
+        </div>
+      </FormSection>
+
+      <FormSection title="Experience Level">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {experienceOptions.map((exp) => (
+            <SelectableCard
+              key={exp}
+              selected={data.experience === exp}
+              onClick={() => update("experience", exp)}
+              className="text-center"
+            >
+              <span className="font-semibold">{exp}</span>
+            </SelectableCard>
+          ))}
+        </div>
+      </FormSection>
+
+      <FormSection title="Education">
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-[#f6f6f6]">
+              Highest Education Level
+            </label>
+            <div className="grid md:grid-cols-2 gap-4">
+              {educationOptions.map((edu) => (
+                <SelectableCard
+                  key={edu}
+                  selected={data.education === edu}
+                  onClick={() => update("education", edu)}
+                >
+                  <span className="font-semibold">{edu}</span>
+                </SelectableCard>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-[#f6f6f6]">
+                University/Institution
+              </label>
+              <Input
+                value={data.university}
+                onChange={(e) => update("university", e.target.value)}
+                placeholder="Enter your university name"
+                className="h-12 bg-[#111111] border-[#ffcb74]/30 text-[#f6f6f6] placeholder:text-[#f6f6f6]/50 focus:border-[#ffcb74] focus:ring-[#ffcb74]"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-[#f6f6f6]">
+                Graduation Year
+              </label>
+              <Input
+                type="number"
+                value={data.graduationYear}
+                onChange={(e) => update("graduationYear", e.target.value)}
+                placeholder="2024"
+                className="h-12 bg-[#111111] border-[#ffcb74]/30 text-[#f6f6f6] placeholder:text-[#f6f6f6]/50 focus:border-[#ffcb74] focus:ring-[#ffcb74]"
+              />
+            </div>
+          </div>
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Resume & Portfolio"
+        description="Upload your documents and showcase your work"
+      >
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-[#f6f6f6]">
+              Resume/CV *
+            </label>
+            <FileUpload
+              file={data.resume}
+              onUpload={(file) => update("resume", file)}
+              onRemove={() => update("resume", null)}
+              accept=".pdf,.doc,.docx"
+              icon={FileText}
+              title="Upload your resume"
+              description="PDF, DOC, DOCX • Max 5MB"
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-[#f6f6f6]">
+                Portfolio URL
+              </label>
+              <Input
+                value={data.portfolio}
+                onChange={(e) => update("portfolio", e.target.value)}
+                placeholder="https://yourportfolio.com"
+                className="h-12 bg-[#111111] border-[#ffcb74]/30 text-[#f6f6f6] placeholder:text-[#f6f6f6]/50 focus:border-[#ffcb74] focus:ring-[#ffcb74]"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-[#f6f6f6]">
+                LinkedIn Profile
+              </label>
+              <Input
+                value={data.linkedIn}
+                onChange={(e) => update("linkedIn", e.target.value)}
+                placeholder="https://linkedin.com/in/yourprofile"
+                className="h-12 bg-[#111111] border-[#ffcb74]/30 text-[#f6f6f6] placeholder:text-[#f6f6f6]/50 focus:border-[#ffcb74] focus:ring-[#ffcb74]"
+              />
+            </div>
+          </div>
+        </div>
+      </FormSection>
+    </div>
+  );
+
+  const Step3 = () => (
+    <div className="space-y-8">
+      <FormSection
+        title="Technical Skills"
+        description="Select your technical expertise"
+      >
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {techSkills.map((skill) => (
+            <SelectableCard
+              key={skill}
+              selected={data.skills.includes(skill)}
+              onClick={() => toggle("skills", skill)}
+              className="text-center"
+            >
+              <span className="font-medium text-sm">{skill}</span>
+            </SelectableCard>
+          ))}
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Career Interests"
+        description="What areas excite you the most?"
+      >
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {careerInterests.map((interest) => (
+            <SelectableCard
+              key={interest}
+              selected={data.interests.includes(interest)}
+              onClick={() => toggle("interests", interest)}
+              className="text-center"
+            >
+              <span className="font-medium text-sm">{interest}</span>
+            </SelectableCard>
+          ))}
+        </div>
+      </FormSection>
+
+      <FormSection title="About You" description="Tell us more about yourself">
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-[#f6f6f6]">
+            Bio/Summary
+          </label>
+          <Textarea
+            value={data.bio}
+            onChange={(e) => update("bio", e.target.value)}
+            placeholder="Write a brief summary about yourself, your goals, and what makes you unique..."
+            className="min-h-[120px] bg-[#111111] border-[#ffcb74]/30 text-[#f6f6f6] placeholder:text-[#f6f6f6]/50 focus:border-[#ffcb74] focus:ring-[#ffcb74]"
+          />
+        </div>
+      </FormSection>
+    </div>
+  );
+
+  const Step4 = () => (
+    <div className="space-y-8">
+      <FormSection
+        title="Job Preferences"
+        description="What type of opportunities are you looking for?"
+      >
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-[#f6f6f6]">
+              Job Types
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {jobTypeOptions.map((type) => (
+                <SelectableCard
+                  key={type}
+                  selected={data.jobTypes.includes(type)}
+                  onClick={() => toggle("jobTypes", type)}
+                  className="text-center"
+                >
+                  <span className="font-semibold">{type}</span>
+                </SelectableCard>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-[#f6f6f6]">
+              Work Mode Preference
+            </label>
+            <div className="grid grid-cols-3 gap-4">
+              {workModeOptions.map((mode) => (
+                <SelectableCard
+                  key={mode}
+                  selected={data.workModes.includes(mode)}
+                  onClick={() => toggle("workModes", mode)}
+                  className="text-center"
+                >
+                  <span className="font-semibold">{mode}</span>
+                </SelectableCard>
+              ))}
+            </div>
+          </div>
+        </div>
+      </FormSection>
+
+      <FormSection title="Salary & Availability">
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-[#f6f6f6]">
+              Expected Salary (Annual)
+            </label>
+            <Input
+              value={data.salaryExpectation}
+              onChange={(e) => update("salaryExpectation", e.target.value)}
+              placeholder="e.g., ₹5,00,000 - ₹8,00,000"
+              className="h-12 bg-[#111111] border-[#ffcb74]/30 text-[#f6f6f6] placeholder:text-[#f6f6f6]/50 focus:border-[#ffcb74] focus:ring-[#ffcb74]"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-[#f6f6f6]">
+              Availability
+            </label>
+            <Input
+              value={data.availability}
+              onChange={(e) => update("availability", e.target.value)}
+              placeholder="e.g., Immediate, 2 weeks notice"
+              className="h-12 bg-[#111111] border-[#ffcb74]/30 text-[#f6f6f6] placeholder:text-[#f6f6f6]/50 focus:border-[#ffcb74] focus:ring-[#ffcb74]"
+            />
+          </div>
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Relocation"
+        description="Are you open to relocating for the right opportunity?"
+      >
+        <div className="grid grid-cols-3 gap-4">
+          {["Yes", "No", "Maybe"].map((option) => (
+            <SelectableCard
+              key={option}
+              selected={data.relocate === option}
+              onClick={() => update("relocate", option)}
+              className="text-center"
+            >
+              <span className="font-semibold">{option}</span>
+            </SelectableCard>
+          ))}
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Final Review"
+        description="Review your information before submitting"
+      >
+        <div className="bg-[#ffcb74]/10 p-6 rounded-2xl border border-[#ffcb74]/30">
+          <div className="grid md:grid-cols-2 gap-6 text-sm">
+            <div>
+              <h4 className="font-semibold text-[#f6f6f6] mb-2">
+                Personal Info
+              </h4>
+              <p className="text-[#f6f6f6]/80">
+                {data.firstName} {data.lastName}
+              </p>
+              <p className="text-[#f6f6f6]/80">{data.email}</p>
+              <p className="text-[#f6f6f6]/80">{data.city}</p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-[#f6f6f6] mb-2">
+                Professional
+              </h4>
+              <p className="text-[#f6f6f6]/80">{data.currentStatus}</p>
+              <p className="text-[#f6f6f6]/80">{data.experience} experience</p>
+              <p className="text-[#f6f6f6]/80">
+                {data.skills.length} skills selected
+              </p>
+            </div>
+          </div>
+        </div>
+      </FormSection>
+    </div>
+  );
+
+  const handleSubmit = () => {
+    console.log("Profile Data:", data);
+    alert("🎉 Profile created successfully! Welcome to the platform!");
+    // Save data to localStorage
+    localStorage.setItem("jobseekerProfile", JSON.stringify(data));
+    // Redirect to dashboard
+    router.push("/dashboard/jobseeker/dashboard");
+  };
+
+  return (
+    <div className="min-h-screen bg-[#2f2f2f]">
+      <div className="max-w-5xl mx-auto p-8">
+        {/* Header */}
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 bg-[#ffcb74] rounded-2xl flex items-center justify-center shadow-lg">
+              <Sparkles className="w-6 h-6 text-[#111111]" />
+            </div>
+            <h1 className="text-2xl font-black text-[#f6f6f6]">
+              JobSeeker Pro
+            </h1>
+          </div>
+          <ProgressBar />
+        </div>
+
+        <StepHeader />
+
+        {/* Step Content */}
+        {step === 1 && <Step1 />}
+        {step === 2 && <Step2 />}
+        {step === 3 && <Step3 />}
+        {step === 4 && <Step4 />}
+
+        {/* Navigation */}
+        <div className="flex justify-between items-center mt-12 pt-8">
+          <Button
+            onClick={() => setStep(step - 1)}
+            disabled={step === 1}
+            variant="outline"
+            className="bg-[#111111] text-[#f6f6f6] border-[#ffcb74] hover:bg-[#ffcb74] hover:text-[#111111] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft className="w-4 h-4 mr-2" />
+            Previous
+          </Button>
+
+          {step < 4 ? (
+            <Button
+              onClick={() => setStep(step + 1)}
+              className="bg-[#111111] hover:bg-[#111111]/80 text-[#f6f6f6] border border-[#ffcb74]"
+            >
+              Continue
+              <ChevronRight className="w-4 h-4 ml-2" />
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSubmit}
+              className="bg-[#ffcb74] hover:bg-[#ffcb74]/80 text-[#111111] font-bold"
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Create Profile
+            </Button>
+          )}
         </div>
       </div>
     </div>
-  )
+  );
 }
