@@ -45,3 +45,24 @@ CREATE TRIGGER update_users_updated_at
   BEFORE UPDATE ON users 
   FOR EACH ROW 
   EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TABLE IF NOT EXISTS companies (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id),
+  name TEXT NOT NULL,
+  description TEXT,
+  industry TEXT,
+  stage TEXT,
+  level TEXT,
+  valuation NUMERIC,
+  match NUMERIC,
+  sector TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_companies_user_id ON companies(user_id);
+
+ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all operations for authenticated users" ON companies
+  FOR ALL USING (true) WITH CHECK (true);
