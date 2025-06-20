@@ -8,10 +8,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Rocket, Mail, Lock, User } from "lucide-react"
+import { useUser } from "@civic/auth/react"
 import Link from "next/link"
 
 export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false)
+  const { user, signIn } = useUser()
+
+  // Redirect if already authenticated
+  if (user) {
+    window.location.href = "/onboarding"
+    return null
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -100,9 +108,7 @@ export default function AuthPage() {
                   </Button>
                 </form>
               </TabsContent>
-            </Tabs>
-
-            <div className="mt-6">
+            </Tabs>            <div className="mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-300" />
@@ -111,13 +117,23 @@ export default function AuthPage() {
                   <span className="px-2 bg-white text-gray-500">Or continue with</span>
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <Button variant="outline" className="bg-white text-gray-600">
-                  Google
+              <div className="mt-4 space-y-3">
+                {/* Civic Auth Button */}
+                <Button 
+                  onClick={signIn}
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold"
+                >
+                  Continue with Civic Auth
                 </Button>
-                <Button variant="outline" className="bg-white text-gray-600">
-                  LinkedIn
-                </Button>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <Button variant="outline" className="bg-white text-gray-600">
+                    Google
+                  </Button>
+                  <Button variant="outline" className="bg-white text-gray-600">
+                    LinkedIn
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>

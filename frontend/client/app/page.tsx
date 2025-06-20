@@ -3,7 +3,9 @@
 import { useEffect, useRef } from "react"
 import * as THREE from "three"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Sparkles } from "lucide-react"
+import { ArrowRight, Sparkles, LogOut } from "lucide-react"
+import { UserButton, useUser } from "@civic/auth/react"
+import Link from "next/link"
 
 export default function LandingPage() {
   const mountRef = useRef<HTMLDivElement>(null)
@@ -12,6 +14,9 @@ export default function LandingPage() {
   const globeRef = useRef<THREE.Group>(null)
   const particlesRef = useRef<THREE.Points>(null)
   const ringsRef = useRef<THREE.Group>(null)
+  
+  // Civic Auth hooks
+  const { user, signIn, signOut } = useUser()
 
   useEffect(() => {
     if (!mountRef.current) return
@@ -235,19 +240,51 @@ export default function LandingPage() {
       <div ref={mountRef} className="absolute inset-0 z-0" />
 
       {/* Content Overlay */}
-      <div className="relative z-10 min-h-screen flex flex-col">
-        {/* Navigation */}
+      <div className="relative z-10 min-h-screen flex flex-col">        {/* Navigation */}
         <nav className="p-6 flex justify-between items-center">
           <div className="text-2xl font-bold">
             <span className="text-white">Startup</span>
             <span style={{ color: "#ffcb74" }}>Hub</span>
           </div>
-          <Button
-            variant="outline"
-            className="bg-transparent border-[#ffcb74] text-[#ffcb74] hover:bg-[#ffcb74] hover:text-black transition-all duration-300"
-          >
-            Sign In
-          </Button>
+          
+          {/* Civic Auth Integration */}
+          {user ? (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <UserButton />
+                <span className="text-[#ffcb74] text-sm">
+                  Welcome, {user.username || 'User'}
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={signOut}
+                className="bg-transparent border-[#ffcb74] text-[#ffcb74] hover:bg-[#ffcb74] hover:text-black transition-all duration-300"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                onClick={signIn}
+                className="bg-transparent border-[#ffcb74] text-[#ffcb74] hover:bg-[#ffcb74] hover:text-black transition-all duration-300"
+              >
+                Sign In
+              </Button>
+              <Link href="/auth">
+                <Button
+                  variant="outline"
+                  className="bg-transparent border-[#ffcb74] text-[#ffcb74] hover:bg-[#ffcb74] hover:text-black transition-all duration-300"
+                >
+                  Alternative Auth
+                </Button>
+              </Link>
+            </div>
+          )}
         </nav>
 
         {/* Hero Section - Left Aligned */}
@@ -317,31 +354,59 @@ export default function LandingPage() {
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#ffcb74" }}></div>
                 <span className="text-lg text-gray-300">Personalized interview simulations</span>
               </div>
-            </div>
-
-            {/* CTA Section */}
+            </div>            {/* CTA Section */}
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  size="lg"
-                  className="px-10 py-4 text-lg font-semibold bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] transition-all duration-300 shadow-lg hover:shadow-xl"
-                >
-                  Join Waitlist
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="px-10 py-4 text-lg bg-transparent border-2 border-[#ffcb74] text-[#ffcb74] hover:bg-[#ffcb74] hover:text-black transition-all duration-300"
-                  onClick={() => window.location.href = "/onboarding"}
-                >
-                  Try Prototype
-                </Button>
-              </div>
+              {user ? (
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Link href="/dashboard">
+                    <Button
+                      size="lg"
+                      className="px-10 py-4 text-lg font-semibold bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] transition-all duration-300 shadow-lg hover:shadow-xl"
+                    >
+                      Go to Dashboard
+                      <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                  </Link>
+                  <Link href="/onboarding">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="px-10 py-4 text-lg bg-transparent border-2 border-[#ffcb74] text-[#ffcb74] hover:bg-[#ffcb74] hover:text-black transition-all duration-300"
+                    >
+                      Complete Profile
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button
+                    size="lg"
+                    onClick={signIn}
+                    className="px-10 py-4 text-lg font-semibold bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] transition-all duration-300 shadow-lg hover:shadow-xl"
+                  >
+                    Get Started
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                  <Link href="/onboarding">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="px-10 py-4 text-lg bg-transparent border-2 border-[#ffcb74] text-[#ffcb74] hover:bg-[#ffcb74] hover:text-black transition-all duration-300"
+                    >
+                      Try Prototype
+                    </Button>
+                  </Link>
+                </div>
+              )}
 
               <p className="text-gray-400 text-sm">
-                Join <span style={{ color: "#ffcb74" }}>10,000+</span> founders, job seekers, and investors already on
-                the platform
+                {user ? (
+                  <>Welcome back! Continue building your startup journey.</>
+                ) : (
+                  <>
+                    Join <span style={{ color: "#ffcb74" }}>10,000+</span> founders, job seekers, and investors already on
+                    the platform
+                  </>                )}
               </p>
             </div>
           </div>
