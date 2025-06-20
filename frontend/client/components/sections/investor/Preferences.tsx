@@ -1,43 +1,63 @@
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
 export default function Preferences() {
+  const sectors = ["AI/ML", "FinTech", "HealthTech", "Climate Tech", "Web3", "EdTech"]
+  const stages = ["Pre-Seed", "Seed", "Series A", "Series B"]
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          Investment Preferences
-        </CardTitle>
-        <CardDescription>Set your investment criteria to receive better deal flow matches</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Preferred Industries</label>
-            <Input placeholder="e.g., SaaS, FinTech, AI/ML" />
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold" style={{ color: "#f6f6f6" }}>
+        Investment Preferences
+      </h2>
+
+      <Card
+        className="backdrop-blur-sm border"
+        style={{
+          backgroundColor: "rgba(255, 255, 255, 0.05)",
+          borderColor: "rgba(255, 203, 116, 0.2)",
+        }}
+      >
+        <CardHeader>
+          <CardTitle style={{ color: "#ffcb74" }}>Preferred Sectors</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {sectors.map((sector) => (
+              <Badge
+                key={sector}
+                className="cursor-pointer bg-[#ffcb74]/20 text-[#ffcb74] hover:bg-[#ffcb74] hover:text-black transition-all duration-300"
+              >
+                {sector}
+              </Badge>
+            ))}
           </div>
-          <div>
-            <label className="text-sm font-medium mb-2 block">Investment Range</label>
-            <Input placeholder="e.g., $50K - $500K" />
+        </CardContent>
+      </Card>
+
+      <Card
+        className="backdrop-blur-sm border"
+        style={{
+          backgroundColor: "rgba(255, 255, 255, 0.05)",
+          borderColor: "rgba(255, 203, 116, 0.2)",
+        }}
+      >
+        <CardHeader>
+          <CardTitle style={{ color: "#ffcb74" }}>Investment Stages</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {stages.map((stage) => (
+              <Badge
+                key={stage}
+                className="cursor-pointer bg-[#ffcb74]/20 text-[#ffcb74] hover:bg-[#ffcb74] hover:text-black transition-all duration-300"
+              >
+                {stage}
+              </Badge>
+            ))}
           </div>
-        </div>
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Preferred Stages</label>
-            <Input placeholder="e.g., Seed, Series A" />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-2 block">Geographic Focus</label>
-            <Input placeholder="e.g., US, Europe, Global" />
-          </div>
-        </div>
-        <div>
-          <label className="text-sm font-medium mb-2 block">Minimum Traction Requirements</label>
-          <Input placeholder="e.g., $100K ARR, 1000+ users" />
-        </div>
-        <Button className="bg-orange-600 hover:bg-orange-700">Update Preferences</Button>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   )
-} 
+}
