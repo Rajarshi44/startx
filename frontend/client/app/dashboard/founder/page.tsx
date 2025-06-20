@@ -9,11 +9,51 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Lightbulb, Users, TrendingUp, FileText, CheckCircle, Clock, Sparkles, Target, DollarSign } from "lucide-react"
+import { Avatar } from "@/components/ui/avatar"
+import { motion, AnimatePresence } from "framer-motion"
+import IdeaValidation from '@/components/sections/founder/IdeaValidation'
 
 export default function FounderDashboard() {
   const [ideaText, setIdeaText] = useState("")
   const [isValidating, setIsValidating] = useState(false)
   const [validationComplete, setValidationComplete] = useState(false)
+  // Co-founder matching state
+  const [isMatching, setIsMatching] = useState(false)
+  const [cofounderResults, setCofounderResults] = useState<any[]>([])
+  const [skillsNeeded, setSkillsNeeded] = useState("")
+  const [experienceLevel, setExperienceLevel] = useState("")
+
+  // Mock co-founder profiles
+  const mockProfiles = [
+    {
+      name: "Sarah Chen",
+      avatar: "https://randomuser.me/api/portraits/women/44.jpg",
+      title: "Full-stack Developer, 8 years exp",
+      skills: ["React", "Node.js", "AI/ML"],
+      compatibility: 92,
+    },
+    {
+      name: "Alex Ivanov",
+      avatar: "https://randomuser.me/api/portraits/men/32.jpg",
+      title: "Product Designer, 6 years exp",
+      skills: ["Figma", "UX", "Branding"],
+      compatibility: 88,
+    },
+    {
+      name: "Priya Patel",
+      avatar: "https://randomuser.me/api/portraits/women/68.jpg",
+      title: "Growth Marketer, 10 years exp",
+      skills: ["SEO", "Content", "Paid Ads"],
+      compatibility: 85,
+    },
+    {
+      name: "David Kim",
+      avatar: "https://randomuser.me/api/portraits/men/76.jpg",
+      title: "AI Engineer, 5 years exp",
+      skills: ["Python", "TensorFlow", "LLMs"],
+      compatibility: 90,
+    },
+  ]
 
   const handleValidateIdea = async () => {
     setIsValidating(true)
@@ -22,6 +62,17 @@ export default function FounderDashboard() {
       setIsValidating(false)
       setValidationComplete(true)
     }, 3000)
+  }
+
+  const handleFindCofounders = () => {
+    setIsMatching(true)
+    setCofounderResults([])
+    setTimeout(() => {
+      // Shuffle and pick 2-3 random profiles
+      const shuffled = mockProfiles.sort(() => 0.5 - Math.random())
+      setCofounderResults(shuffled.slice(0, 3))
+      setIsMatching(false)
+    }, 1800)
   }
 
   return (
@@ -52,91 +103,7 @@ export default function FounderDashboard() {
               </TabsList>
 
               <TabsContent value="idea" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Lightbulb className="mr-2 h-5 w-5 text-purple-600" />
-                      Idea Validation
-                    </CardTitle>
-                    <CardDescription>
-                      Describe your startup idea and get AI-powered validation and insights
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Your Startup Idea</label>
-                      <Textarea
-                        placeholder="Describe your startup idea, target market, and value proposition..."
-                        value={ideaText}
-                        onChange={(e) => setIdeaText(e.target.value)}
-                        rows={6}
-                        className="resize-none"
-                      />
-                    </div>
-                    <Button
-                      onClick={handleValidateIdea}
-                      disabled={!ideaText.trim() || isValidating}
-                      className="bg-purple-600 hover:bg-purple-700"
-                    >
-                      {isValidating ? (
-                        <>
-                          <Clock className="mr-2 h-4 w-4 animate-spin" />
-                          Validating...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="mr-2 h-4 w-4" />
-                          Validate Idea
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {validationComplete && (
-                  <Card className="border-green-200 bg-green-50">
-                    <CardHeader>
-                      <CardTitle className="flex items-center text-green-800">
-                        <CheckCircle className="mr-2 h-5 w-5" />
-                        Validation Complete
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid md:grid-cols-3 gap-4">
-                        <div className="text-center p-4 bg-white rounded-lg">
-                          <div className="text-2xl font-bold text-green-600 mb-1">8.2/10</div>
-                          <div className="text-sm text-gray-600">Market Viability</div>
-                        </div>
-                        <div className="text-center p-4 bg-white rounded-lg">
-                          <div className="text-2xl font-bold text-blue-600 mb-1">7.8/10</div>
-                          <div className="text-sm text-gray-600">Competition Score</div>
-                        </div>
-                        <div className="text-center p-4 bg-white rounded-lg">
-                          <div className="text-2xl font-bold text-purple-600 mb-1">9.1/10</div>
-                          <div className="text-sm text-gray-600">Innovation Index</div>
-                        </div>
-                      </div>
-                      <div className="space-y-3">
-                        <div>
-                          <h4 className="font-semibold text-green-800 mb-2">Strengths</h4>
-                          <ul className="text-sm text-green-700 space-y-1">
-                            <li>• Strong market demand identified</li>
-                            <li>• Clear value proposition</li>
-                            <li>• Scalable business model</li>
-                          </ul>
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-orange-800 mb-2">Areas to Consider</h4>
-                          <ul className="text-sm text-orange-700 space-y-1">
-                            <li>• Competitive landscape analysis needed</li>
-                            <li>• Consider pricing strategy</li>
-                            <li>• Validate with target customers</li>
-                          </ul>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                <IdeaValidation />
               </TabsContent>
 
               <TabsContent value="team" className="space-y-6">
@@ -155,49 +122,99 @@ export default function FounderDashboard() {
                       <div className="grid md:grid-cols-2 gap-4">
                         <div>
                           <label className="text-sm font-medium mb-2 block">Skills Needed</label>
-                          <Input placeholder="e.g., Technical, Marketing, Sales" />
+                          <Input
+                            placeholder="e.g., Technical, Marketing, Sales"
+                            value={skillsNeeded}
+                            onChange={e => setSkillsNeeded(e.target.value)}
+                          />
                         </div>
                         <div>
                           <label className="text-sm font-medium mb-2 block">Experience Level</label>
-                          <Input placeholder="e.g., 5+ years, Senior level" />
+                          <Input
+                            placeholder="e.g., 5+ years, Senior level"
+                            value={experienceLevel}
+                            onChange={e => setExperienceLevel(e.target.value)}
+                          />
                         </div>
                       </div>
-                      <Button className="bg-blue-600 hover:bg-blue-700">Find Co-founders</Button>
+                      <Button
+                        className="bg-blue-600 hover:bg-blue-700 transition-all duration-200"
+                        onClick={handleFindCofounders}
+                        disabled={isMatching || !skillsNeeded.trim() || !experienceLevel.trim()}
+                      >
+                        {isMatching ? (
+                          <>
+                            <Clock className="mr-2 h-4 w-4 animate-spin" />
+                            Matching...
+                          </>
+                        ) : (
+                          <>
+                            <Users className="mr-2 h-4 w-4" />
+                            Find Co-founders
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
 
+                {/* Animated results */}
+                <AnimatePresence>
+                  {isMatching && (
+                    <motion.div
+                      key="loading"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 20 }}
+                      className="flex justify-center py-8"
+                    >
+                      <div className="flex flex-col items-center">
+                        <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4" />
+                        <div className="text-blue-600 font-medium">Finding your best matches...</div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <div className="grid md:grid-cols-2 gap-4">
-                  {[1, 2].map((i) => (
-                    <Card key={i} className="border-blue-200">
-                      <CardContent className="p-4">
-                        <div className="flex items-start space-x-3">
-                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                            <Users className="h-6 w-6 text-blue-600" />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-semibold">Sarah Chen</h4>
-                            <p className="text-sm text-gray-600 mb-2">Full-stack Developer, 8 years exp</p>
-                            <div className="flex flex-wrap gap-1 mb-3">
-                              <Badge variant="secondary" className="text-xs">
-                                React
-                              </Badge>
-                              <Badge variant="secondary" className="text-xs">
-                                Node.js
-                              </Badge>
-                              <Badge variant="secondary" className="text-xs">
-                                AI/ML
-                              </Badge>
+                  <AnimatePresence>
+                    {cofounderResults.map((profile, i) => (
+                      <motion.div
+                        key={profile.name}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        transition={{ delay: i * 0.1 }}
+                      >
+                        <Card className="border-blue-200 hover:shadow-xl transition-shadow duration-200 group">
+                          <CardContent className="p-4">
+                            <div className="flex items-start space-x-3">
+                              <Avatar className="w-12 h-12 ring-2 ring-blue-200 group-hover:ring-blue-400 transition-all duration-200">
+                                <img src={profile.avatar} alt={profile.name} className="rounded-full" />
+                              </Avatar>
+                              <div className="flex-1">
+                                <h4 className="font-semibold group-hover:text-blue-700 transition-colors duration-200">{profile.name}</h4>
+                                <p className="text-sm text-gray-600 mb-2">{profile.title}</p>
+                                <div className="flex flex-wrap gap-1 mb-3">
+                                  {profile.skills.map((skill: string) => (
+                                    <Badge key={skill} variant="secondary" className="text-xs">
+                                      {skill}
+                                    </Badge>
+                                  ))}
+                                </div>
+                                <div className="text-sm text-green-600 font-medium mb-2">
+                                  {profile.compatibility}% Compatibility Match
+                                </div>
+                                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 transition-all duration-200">
+                                  Connect
+                                </Button>
+                              </div>
                             </div>
-                            <div className="text-sm text-green-600 font-medium mb-2">92% Compatibility Match</div>
-                            <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                              Connect
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
               </TabsContent>
 
