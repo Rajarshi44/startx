@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Lightbulb, Users, TrendingUp, FileText, CheckCircle, Clock, Sparkles, Target, DollarSign, Briefcase, MapPin, Building2, MessageSquare, Search, Download } from "lucide-react"
+import { Lightbulb, Users, TrendingUp, FileText, CheckCircle, Clock, Sparkles, Target, DollarSign, Briefcase, MapPin, Building2, MessageSquare, Search, Download, ExternalLink, Globe } from "lucide-react"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -611,7 +611,7 @@ export default function FounderDashboard() {
                    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
                    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
                    .replace(/^- (.*$)/gm, '<li>$1</li>')
-                   .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+                   .replace(/(<li>.*<\/li>)/g, '<ul>$1</ul>')
                    .replace(/\n\n/g, '</p><p>')
                    .replace(/^(?!<[hlu])/gm, '<p>')
                    .replace(/(?<!>)$/gm, '</p>')
@@ -1033,8 +1033,8 @@ export default function FounderDashboard() {
           {/* Main Content */}
           <div className="lg:col-span-2">
             <Tabs defaultValue="idea" className="space-y-8">
-              <TabsList className="grid w-full grid-cols-5 p-1 rounded-xl bg-gray-900/50 border border-amber-500/20 backdrop-blur-sm">
-                {["idea", "team", "investors", "jobs", "pitch"].map((tab, index) => (
+              <TabsList className="grid w-full grid-cols-6 p-1 rounded-xl bg-gray-900/50 border border-amber-500/20 backdrop-blur-sm">
+                {["idea", "policy", "team", "investors", "jobs", "pitch"].map((tab, index) => (
                   <TabsTrigger
                     key={tab}
                     value={tab}
@@ -1294,14 +1294,17 @@ export default function FounderDashboard() {
                 {policyResearchComplete && policyResult && (
                   <Card className="border border-amber-500/30 rounded-2xl bg-black/80 backdrop-blur-sm animate-slide-in-up shadow-2xl shadow-amber-500/10">
                     <CardHeader>
-                      <CardTitle className="text-white font-light text-xl">Policy Research Results</CardTitle>
+                      <CardTitle className="text-white font-light text-xl flex items-center">
+                        <FileText className="mr-3 h-6 w-6 text-amber-400" />
+                        Policy Research Results
+                      </CardTitle>
                     </CardHeader>
-                    <CardContent className="prose prose-invert max-w-none text-white">
+                    <CardContent className="max-w-none">
                       {(() => {
-                        // Parse markdown into sections
+                        // Parse markdown into sections with enhanced source extraction
                         const sectionOrder = [
                           "Relevant Government Policies",
-                          "Government Initiatives & Programs",
+                          "Government Initiatives & Programs", 
                           "Regulatory Compliance",
                           "Success Stories",
                           "Implementation Timeline",
@@ -1309,30 +1312,172 @@ export default function FounderDashboard() {
                         ];
                         const sectionRegex = /## ([^\n]+)\n([\s\S]*?)(?=\n## |$)/g;
                         const sections: Record<string, string> = {};
+                        const sources: string[] = [];
+                        const sourceDetails: Array<{url: string, title: string, context: string}> = [];
+                        
                         let match;
                         while ((match = sectionRegex.exec(policyResult))) {
-                          sections[match[1].trim()] = match[2].trim();
+                          const sectionTitle = match[1].trim();
+                          const sectionContent = match[2].trim();
+                          sections[sectionTitle] = sectionContent;
+                          
+                          // Extract sources with titles from section content
+                          const sourceRegex = /\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g;
+                          let sourceMatch: RegExpExecArray | null;
+                          while ((sourceMatch = sourceRegex.exec(sectionContent))) {
+                            const url = sourceMatch[2];
+                            const title = sourceMatch[1];
+                            
+                            if (!sources.includes(url)) {
+                              sources.push(url);
+                              
+                              // Extract context around this reference
+                              const linkIndex = sectionContent.indexOf(sourceMatch[0]);
+                              const lines = sectionContent.split('\n');
+                              const contextLine = lines.find(line => line.includes(sourceMatch![0])) || '';
+                              const context = contextLine.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim() || title;
+                              
+                              sourceDetails.push({
+                                url: url,
+                                title: title,
+                                context: context
+                              });
+                            }
+                          }
+                        }
+                        
+                        // Extract additional sources from citations
+                        const citationRegex = /Sources?:[\s\S]*?(https?:\/\/[^\s\n]+)/gi;
+                        let citationMatch;
+                        while ((citationMatch = citationRegex.exec(policyResult))) {
+                          const url = citationMatch[1];
+                          if (!sources.includes(url)) {
+                            sources.push(url);
+                            sourceDetails.push({
+                              url: url,
+                              title: new URL(url).hostname.replace('www.', ''),
+                              context: 'Referenced in citations'
+                            });
+                          }
                         }
                         
                         return (
-                          <ShadTabs defaultValue={sectionOrder[0]} className="w-full">
-                            <ShadTabsList className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-6 bg-black/30 border border-amber-500/20 rounded-xl">
+                          <div className="space-y-8">
+                            <ShadTabs defaultValue={sectionOrder[0]} className="w-full">
+                              <ShadTabsList className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-6 bg-black/30 border border-amber-500/20 rounded-xl">
+                                {sectionOrder.map((section: string) => (
+                                  <ShadTabsTrigger
+                                    key={section}
+                                    value={section}
+                                    className="text-gray-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-400 data-[state=active]:to-amber-500 data-[state=active]:text-black rounded-lg transition-all duration-300 hover:text-white font-light tracking-wide capitalize text-xs p-2"
+                                  >
+                                    {section.replace(/&/g, 'and').replace(/Government/g, 'Gov')}
+                                  </ShadTabsTrigger>
+                                ))}
+                              </ShadTabsList>
                               {sectionOrder.map((section: string) => (
-                                <ShadTabsTrigger
-                                  key={section}
-                                  value={section}
-                                  className="text-gray-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-400 data-[state=active]:to-amber-500 data-[state=active]:text-black rounded-lg transition-all duration-300 hover:text-white font-light tracking-wide capitalize text-xs p-2"
-                                >
-                                  {section.replace(/&/g, 'and')}
-                                </ShadTabsTrigger>
+                                <ShadTabsContent key={section} value={section} className="pt-2">
+                                  <div className="prose prose-invert max-w-none text-white [&>*]:text-white [&>h1]:text-amber-300 [&>h2]:text-amber-300 [&>h3]:text-amber-200 [&>h4]:text-amber-200 [&>strong]:text-amber-100 [&>ul]:text-white [&>ol]:text-white [&>li]:text-white [&>p]:text-white [&>table]:text-white [&>td]:text-white [&>th]:text-amber-200 [&>th]:bg-amber-500/20">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{sections[section] || "No data available for this section."}</ReactMarkdown>
+                                  </div>
+                                </ShadTabsContent>
                               ))}
-                            </ShadTabsList>
-                            {sectionOrder.map((section: string) => (
-                              <ShadTabsContent key={section} value={section} className="pt-2">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{sections[section] || "No data available for this section."}</ReactMarkdown>
-                              </ShadTabsContent>
-                            ))}
-                          </ShadTabs>
+                            </ShadTabs>
+                            
+                            {/* Sources Section */}
+                            {(sourceDetails.length > 0 || sources.length > 0) && (
+                              <div className="space-y-4">
+                                <h3 className="text-xl font-light text-amber-400 flex items-center mb-6">
+                                  <span className="w-2 h-8 bg-gradient-to-b from-amber-400 to-amber-500 rounded-full mr-3"></span>
+                                  Referenced Articles & Sources
+                                </h3>
+                                <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-4">
+                                  {(sourceDetails.length > 0 ? sourceDetails : sources.map(url => ({
+                                    url,
+                                    title: new URL(url).hostname.replace('www.', ''),
+                                    context: 'Referenced source'
+                                  }))).slice(0, 8).map((source, index) => {
+                                    try {
+                                      const domain = new URL(source.url).hostname.replace('www.', '');
+                                      const isGovSite = domain.includes('.gov');
+                                      const isEduSite = domain.includes('.edu');
+                                      const isOrgSite = domain.includes('.org');
+                                      
+                                                                              return (
+                                         <Card key={index} className="group border border-amber-500/20 rounded-xl bg-black/40 hover:bg-black/60 hover:border-amber-500/40 transition-all duration-300 hover:scale-[1.02] cursor-pointer">
+                                           <CardContent className="p-4">
+                                             <div className="flex items-start justify-between">
+                                               <div className="flex-1 min-w-0">
+                                                 <div className="flex items-center mb-3">
+                                                   <div className={`w-3 h-3 rounded-full mr-2 flex-shrink-0 ${
+                                                     isGovSite ? 'bg-green-400' : 
+                                                     isEduSite ? 'bg-blue-400' : 
+                                                     isOrgSite ? 'bg-purple-400' :
+                                                     'bg-amber-400'
+                                                   }`} />
+                                                   <span className={`text-xs font-light px-2 py-1 rounded-full ${
+                                                     isGovSite ? 'bg-green-500/20 text-green-300 border border-green-500/30' :
+                                                     isEduSite ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
+                                                     isOrgSite ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
+                                                     'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                                   }`}>
+                                                     {isGovSite ? 'Government' : isEduSite ? 'Academic' : isOrgSite ? 'Organization' : 'Other'}
+                                                   </span>
+                                                 </div>
+                                                 <h4 className="text-white font-medium text-sm mb-2 group-hover:text-amber-300 transition-colors line-clamp-2">
+                                                   {source.title}
+                                                 </h4>
+                                                 <p className="text-gray-400 text-xs font-light mb-2 line-clamp-2">
+                                                   {source.context}
+                                                 </p>
+                                                 <div className="flex items-center text-xs text-gray-500">
+                                                   <Globe className="h-3 w-3 mr-1" />
+                                                   <span className="truncate">{domain}</span>
+                                                 </div>
+                                               </div>
+                                               <Button 
+                                                 size="sm" 
+                                                 variant="ghost" 
+                                                 className="ml-3 h-8 w-8 p-0 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 flex-shrink-0"
+                                                 onClick={() => window.open(source.url, '_blank')}
+                                               >
+                                                 <ExternalLink className="h-4 w-4" />
+                                               </Button>
+                                             </div>
+                                           </CardContent>
+                                         </Card>
+                                       );
+                                     } catch (error) {
+                                       // Fallback for invalid URLs
+                                       return (
+                                         <Card key={index} className="group border border-amber-500/20 rounded-xl bg-black/40 hover:bg-black/60 hover:border-amber-500/40 transition-all duration-300">
+                                           <CardContent className="p-4">
+                                             <div className="flex items-start justify-between">
+                                               <div className="flex-1">
+                                                 <h4 className="text-white font-light text-sm mb-1">
+                                                   {source.title}
+                                                 </h4>
+                                                 <p className="text-gray-400 text-xs font-light">
+                                                   {source.context}
+                                                 </p>
+                                               </div>
+                                             </div>
+                                           </CardContent>
+                                         </Card>
+                                       );
+                                     }
+                                  })}
+                                </div>
+                                {(sourceDetails.length > 8 || sources.length > 8) && (
+                                  <div className="text-center">
+                                    <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 font-light">
+                                      +{Math.max(sourceDetails.length, sources.length) - 8} more sources available
+                                    </Badge>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         );
                       })()}
                     </CardContent>

@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       break;
 
     case 'policy':
-      userPrompt = `Research public policies and government implementations related to this startup idea: ${idea}\n\nReturn the following sections, each with a markdown header (## Section Name):\n\n## Relevant Government Policies\n- List current policies that support or affect this type of business\n- Include policy names, dates, and key provisions\n\n## Government Initiatives & Programs\n- Startup incubators, accelerators, and support programs\n- Funding schemes and grants available\n- Tax incentives and benefits\n\n## Regulatory Compliance\n- Key regulations and compliance requirements\n- Licensing and registration needs\n- Industry-specific regulations\n\n## Success Stories\n- Examples of similar startups that benefited from government support\n- Case studies of policy implementation\n\n## Implementation Timeline\n- How long it typically takes to access these benefits\n- Step-by-step process for applications\n\n## Regional Variations\n- Different policies by state/region if applicable\n- Local government initiatives\n\nAlways include all sections, even if some are empty. Use markdown formatting for tables, lists, and bold text. Focus on actionable information.`;
+      userPrompt = `Research public policies and government implementations related to this startup idea: ${idea}\n\nReturn comprehensive policy research with the following sections, each with a markdown header (## Section Name). IMPORTANT: Include direct links to official sources wherever possible using markdown link format [source name](URL):\n\n## Relevant Government Policies\n- List current policies that support or affect this type of business\n- Include policy names, dates, key provisions, and official links\n- Link to official government websites and policy documents\n\n## Government Initiatives & Programs\n- Startup incubators, accelerators, and support programs with official websites\n- Funding schemes and grants available (include application links)\n- Tax incentives and benefits with IRS or government links\n- SBA programs and resources\n\n## Regulatory Compliance\n- Key regulations and compliance requirements with regulatory body links\n- Licensing and registration needs (link to application portals)\n- Industry-specific regulations with agency websites\n- Federal, state, and local requirements\n\n## Success Stories\n- Examples of similar startups that benefited from government support\n- Case studies with verifiable sources and links\n- Government press releases and success announcements\n\n## Implementation Timeline\n- Step-by-step process for applications with official forms/links\n- Timeline expectations for different programs\n- Contact information for relevant agencies\n\n## Regional Variations\n- Different policies by state/region with state government links\n- Local government initiatives and economic development programs\n- State-specific incentives and programs\n\nALWAYS include direct citations and source links. Use format: [Policy/Program Name](official-website-url) throughout your response. Prioritize .gov, .edu, and official organization websites. Include at least 5-10 authoritative source links.`;
       break;
 
     case 'pitch':
@@ -88,11 +88,72 @@ export async function POST(req: NextRequest) {
 
     // Extract score from the content if available (mainly for validation)
     let score = null;
+    let sources: string[] = [];
+    let sourceDetails: Array<{url: string, title: string, context: string}> = [];
+    
     if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
       const content = data.choices[0].message.content;
       const scoreMatch = content.match(/score[:\s]*(\d+(?:\.\d+)?)/i);
       if (scoreMatch) {
         score = parseFloat(scoreMatch[1]);
+      }
+      
+      // Extract sources from markdown links with titles
+      const sourceLinkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+      let sourceLinkMatch: RegExpExecArray | null;
+      while ((sourceLinkMatch = sourceLinkRegex.exec(content))) {
+        const url = sourceLinkMatch[2];
+        const title = sourceLinkMatch[1];
+        
+        if (!sources.includes(url)) {
+          sources.push(url);
+          
+          // Extract context around this reference
+          const linkIndex = content.indexOf(sourceLinkMatch[0]);
+          const contextStart = Math.max(0, linkIndex - 100);
+          const contextEnd = Math.min(content.length, linkIndex + sourceLinkMatch[0].length + 100);
+          const context = content.substring(contextStart, contextEnd)
+            .split('\n')
+            .find((line: string) => line.includes(sourceLinkMatch![0])) || title;
+          
+          sourceDetails.push({
+            url: url,
+            title: title,
+            context: context.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim()
+          });
+        }
+      }
+      
+      // Extract sources from citations
+      const citationRegex = /(?:Sources?|References?):\s*[\s\S]*?(https?:\/\/[^\s\n]+)/gi;
+      let citationMatch;
+      while ((citationMatch = citationRegex.exec(content))) {
+        const url = citationMatch[1];
+        if (!sources.includes(url)) {
+          sources.push(url);
+          sourceDetails.push({
+            url: url,
+            title: new URL(url).hostname.replace('www.', ''),
+            context: 'Referenced in citations'
+          });
+        }
+      }
+      
+      // Also extract any citations that appear in the format [1], [2], etc. and match them with URLs
+      const numberedCitationRegex = /\[(\d+)\]/g;
+      const citationUrls = content.match(/(?:^\d+\.\s*|^\[\d+\]\s*)(https?:\/\/[^\s\n]+)/gm);
+      if (citationUrls) {
+        citationUrls.forEach((citation: string) => {
+          const urlMatch = citation.match(/(https?:\/\/[^\s\n]+)/);
+          if (urlMatch && !sources.includes(urlMatch[1])) {
+            sources.push(urlMatch[1]);
+            sourceDetails.push({
+              url: urlMatch[1],
+              title: new URL(urlMatch[1]).hostname.replace('www.', ''),
+              context: citation.replace(/(https?:\/\/[^\s\n]+)/, '').trim() || 'Cited reference'
+            });
+          }
+        });
       }
     }
 
@@ -117,6 +178,8 @@ export async function POST(req: NextRequest) {
             idea_text: idea, 
             research_result: JSON.stringify(data),
             perplexity_response: data,
+            sources: sources,
+            source_details: sourceDetails,
             updated_at: new Date().toISOString()
           }
         ], { 
