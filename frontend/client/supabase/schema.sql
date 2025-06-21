@@ -282,17 +282,39 @@ CREATE TABLE IF NOT EXISTS job_applications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   jobseeker_id UUID REFERENCES users(id) ON DELETE CASCADE,
   job_posting_id UUID REFERENCES job_postings(id) ON DELETE CASCADE,
-  status TEXT CHECK (status IN ('applied', 'interview', 'accepted', 'rejected', 'waitlist')) DEFAULT 'applied',
   cover_letter TEXT,
-  notes TEXT, -- Company notes about the application
+  status TEXT CHECK (status IN ('applied', 'interview', 'accepted', 'rejected', 'waitlist')) DEFAULT 'applied',
   applied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(jobseeker_id, job_posting_id)
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_job_applications_jobseeker ON job_applications(jobseeker_id);
 CREATE INDEX IF NOT EXISTS idx_job_applications_job_posting ON job_applications(job_posting_id);
 CREATE INDEX IF NOT EXISTS idx_job_applications_status ON job_applications(status);
+
+-- Interview sessions table for D-ID AI Avatar interviews
+CREATE TABLE IF NOT EXISTS interview_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK (role IN ('jobseeker', 'founder', 'investor')),
+  agent_id TEXT NOT NULL, -- D-ID agent ID
+  stream_id TEXT NOT NULL, -- D-ID stream ID
+  status TEXT CHECK (status IN ('active', 'completed', 'cancelled')) DEFAULT 'active',
+  questions_asked INTEGER DEFAULT 0,
+  total_questions INTEGER DEFAULT 8,
+  transcript TEXT, -- Full interview transcript
+  analysis JSONB, -- AI analysis of the interview
+  feedback TEXT, -- Summary feedback
+  score NUMERIC, -- Overall interview score (0-10)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  completed_at TIMESTAMP WITH TIME ZONE,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_interview_sessions_user_id ON interview_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_interview_sessions_role ON interview_sessions(role);
+CREATE INDEX IF NOT EXISTS idx_interview_sessions_status ON interview_sessions(status);
+CREATE INDEX IF NOT EXISTS idx_interview_sessions_created_at ON interview_sessions(created_at);
 
 -- =============================================
 -- SHARED TABLES
@@ -346,6 +368,7 @@ ALTER TABLE investments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE jobseeker_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE job_postings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE job_applications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE interview_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE meetings ENABLE ROW LEVEL SECURITY;
 
@@ -361,6 +384,7 @@ DROP POLICY IF EXISTS "Allow all operations for authenticated users" ON investme
 DROP POLICY IF EXISTS "Allow all operations for authenticated users" ON jobseeker_profiles;
 DROP POLICY IF EXISTS "Allow all operations for authenticated users" ON job_postings;
 DROP POLICY IF EXISTS "Allow all operations for authenticated users" ON job_applications;
+DROP POLICY IF EXISTS "Allow all operations for authenticated users" ON interview_sessions;
 DROP POLICY IF EXISTS "Allow all operations for authenticated users" ON messages;
 DROP POLICY IF EXISTS "Allow all operations for authenticated users" ON meetings;
 
@@ -376,6 +400,7 @@ CREATE POLICY "Allow all operations for authenticated users" ON investments FOR 
 CREATE POLICY "Allow all operations for authenticated users" ON jobseeker_profiles FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations for authenticated users" ON job_postings FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations for authenticated users" ON job_applications FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all operations for authenticated users" ON interview_sessions FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations for authenticated users" ON messages FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations for authenticated users" ON meetings FOR ALL USING (true) WITH CHECK (true);
 
@@ -392,6 +417,7 @@ DROP TRIGGER IF EXISTS update_investments_updated_at ON investments;
 DROP TRIGGER IF EXISTS update_jobseeker_profiles_updated_at ON jobseeker_profiles;
 DROP TRIGGER IF EXISTS update_job_postings_updated_at ON job_postings;
 DROP TRIGGER IF EXISTS update_job_applications_updated_at ON job_applications;
+DROP TRIGGER IF EXISTS update_interview_sessions_updated_at ON interview_sessions;
 
 -- Add updated_at triggers for all tables that need them
 CREATE TRIGGER update_companies_updated_at BEFORE UPDATE ON companies FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -402,6 +428,7 @@ CREATE TRIGGER update_investments_updated_at BEFORE UPDATE ON investments FOR EA
 CREATE TRIGGER update_jobseeker_profiles_updated_at BEFORE UPDATE ON jobseeker_profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_job_postings_updated_at BEFORE UPDATE ON job_postings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_job_applications_updated_at BEFORE UPDATE ON job_applications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_interview_sessions_updated_at BEFORE UPDATE ON interview_sessions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- =============================================
 -- ADD TRIGGERS FOR ACTIVE ROLES MANAGEMENT

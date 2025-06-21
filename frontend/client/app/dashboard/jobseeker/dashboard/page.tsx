@@ -34,6 +34,9 @@ import {
   Camera,
   Upload,
   GraduationCap,
+  User,
+  Bot,
+  Send,
 } from "lucide-react";
 
 export default function JobSeekerDashboard() {
@@ -43,6 +46,8 @@ export default function JobSeekerDashboard() {
   const [applications, setApplications] = useState<any[]>([]);
   const [profile, setProfile] = useState<any>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [interviewSessions, setInterviewSessions] = useState<any[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [data, setData] = useState({
     // Personal Information
     firstName: "John",
@@ -141,6 +146,10 @@ export default function JobSeekerDashboard() {
           const jobsData = await jobsRes.json();
           setJobs(jobsData.jobs || []);
         }
+
+        // Load interview sessions
+        // Note: Interview sessions API has been removed - using placeholder data
+        setInterviewSessions([]);
       } catch (error) {
         console.error("Error loading jobseeker data:", error);
       } finally {
@@ -159,8 +168,33 @@ export default function JobSeekerDashboard() {
     loadJobSeekerData();
   }, [user?.username]);
 
-  const startInterview = () => {
+  const startInterview = async () => {
+    console.log("Starting interview...");
+    console.log("User:", user?.username);
+    console.log("Is interview active:", isInterviewActive);
+    
+    // Check if user is authenticated
+    if (!user?.username) {
+      console.warn("No user found, checking localStorage for mock ID");
+      const mockId = localStorage.getItem("mockCivicId");
+      if (!mockId) {
+        alert("Please sign in to start an interview");
+        return;
+      }
+      console.log("Using mock civic ID:", mockId);
+    }
+
+    // For now, just show the placeholder interview system
     setIsInterviewActive(true);
+  };
+
+  const handleInterviewComplete = (session: any) => {
+    setIsInterviewActive(false);
+    // Interview system is being updated
+  };
+
+  const handleInterviewClose = () => {
+    setIsInterviewActive(false);
   };
 
   const handleApplyToJob = async (jobId: string) => {
@@ -661,156 +695,142 @@ export default function JobSeekerDashboard() {
               </TabsContent>
 
               <TabsContent value="interview" className="space-y-6">
-                <Card className="bg-[#111111]/80 border-[#ffcb74]/20">
-                  <CardHeader>
-                    <CardTitle className="flex items-center text-[#f6f6f6]">
-                      <MessageSquare className="mr-2 h-5 w-5 text-[#ffcb74]" />
-                      AI Interview Practice
-                    </CardTitle>
-                    <CardDescription className="text-[#f6f6f6]/70">
-                      Practice with our AI interviewer and get real-time
-                      feedback
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {!isInterviewActive ? (
-                      <div className="text-center py-8">
-                        <div className="w-20 h-20 bg-[#ffcb74]/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Play className="h-10 w-10 text-[#ffcb74]" />
-                        </div>
-                        <h3 className="text-lg font-semibold mb-2 text-[#f6f6f6]">
-                          Ready to Practice?
-                        </h3>
-                        <p className="text-[#f6f6f6]/70 mb-6 max-w-md mx-auto">
-                          Our AI interviewer will ask you common interview
-                          questions and provide feedback on your responses.
-                        </p>
-                        <div className="grid md:grid-cols-3 gap-4 mb-6">
-                          <div className="text-center p-4 bg-[#2f2f2f] rounded-lg border border-[#ffcb74]/20">
-                            <div className="text-2xl font-bold text-[#ffcb74] mb-1">
-                              15
-                            </div>
-                            <div className="text-sm text-[#f6f6f6]/70">
-                              Minutes
-                            </div>
-                          </div>
-                          <div className="text-center p-4 bg-[#2f2f2f] rounded-lg border border-[#ffcb74]/20">
-                            <div className="text-2xl font-bold text-[#ffcb74] mb-1">
-                              8
-                            </div>
-                            <div className="text-sm text-[#f6f6f6]/70">
-                              Questions
-                            </div>
-                          </div>
-                          <div className="text-center p-4 bg-[#2f2f2f] rounded-lg border border-[#ffcb74]/20">
-                            <div className="text-2xl font-bold text-[#ffcb74] mb-1">
-                              AI
-                            </div>
-                            <div className="text-sm text-[#f6f6f6]/70">
-                              Feedback
-                            </div>
-                          </div>
-                        </div>
-                        <Button
-                          onClick={startInterview}
-                          className="bg-[#ffcb74] hover:bg-[#ffcb74]/80 text-[#111111] font-semibold"
-                        >
-                          Start Interview Practice
-                        </Button>
+                {isInterviewActive ? (
+                  <Card className="bg-[#111111]/80 border-[#ffcb74]/20">
+                    <CardContent className="text-center py-8">
+                      <div className="w-20 h-20 bg-[#ffcb74]/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <MessageSquare className="h-10 w-10 text-[#ffcb74]" />
                       </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <div className="bg-[#ffcb74]/10 p-4 rounded-lg border border-[#ffcb74]/30">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-[#ffcb74]">
-                              Interview in Progress
-                            </span>
-                            <span className="text-sm text-[#f6f6f6]/70">
-                              Question 1 of 8
-                            </span>
-                          </div>
-                          <Progress
-                            value={12.5}
-                            className="h-2 mb-4 bg-[#2f2f2f]"
-                          />
-                          <div className="bg-[#2f2f2f] p-4 rounded-lg mb-4 border border-[#ffcb74]/20">
-                            <p className="font-medium mb-2 text-[#f6f6f6]">
-                              AI Interviewer:
-                            </p>
-                            <p className="text-[#f6f6f6]/80">
-                              "Tell me about yourself and why you're interested
-                              in working at a startup."
-                            </p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 bg-[#ffcb74] rounded-full animate-pulse"></div>
-                            <span className="text-sm text-[#f6f6f6]/70">
-                              Recording your response...
-                            </span>
-                          </div>
+                      <h3 className="text-lg font-semibold mb-2 text-[#f6f6f6]">
+                        Video Interview System
+                      </h3>
+                      <p className="text-[#f6f6f6]/70 mb-6 max-w-md mx-auto">
+                        The video interview system is being updated. Please check back later for the new implementation.
+                      </p>
+                      <Button 
+                        onClick={() => setIsInterviewActive(false)}
+                        className="bg-[#ffcb74] hover:bg-[#ffcb74]/80 text-[#111111] font-semibold"
+                      >
+                        Close
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <>
+                    {/* Company Selection */}
+                    <Card className="bg-[#111111]/80 border-[#ffcb74]/20">
+                      <CardHeader>
+                        <CardTitle className="flex items-center text-[#f6f6f6]">
+                          <MessageSquare className="mr-2 h-5 w-5 text-[#ffcb74]" />
+                          Select Company for Video Interview
+                        </CardTitle>
+                        <CardDescription className="text-[#f6f6f6]/70">
+                          Choose a company to practice your interview with Shona's video avatar
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {jobs.slice(0, 6).map((job, index) => (
+                            <div
+                              key={index}
+                              className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                                selectedCompany?.id === job.id
+                                  ? "border-[#ffcb74] bg-[#ffcb74]/10"
+                                  : "border-[#ffcb74]/20 bg-[#2f2f2f] hover:border-[#ffcb74]/50"
+                              }`}
+                              onClick={() => setSelectedCompany(job)}
+                            >
+                              <h4 className="font-semibold text-[#f6f6f6] mb-1">{job.company?.name}</h4>
+                              <p className="text-[#ffcb74] text-sm mb-2">{job.title}</p>
+                              <p className="text-[#f6f6f6]/70 text-xs">{job.location}</p>
+                            </div>
+                          ))}
                         </div>
-                        <div className="flex justify-between">
-                          <Button
-                            variant="outline"
-                            className="bg-[#111111] text-[#f6f6f6] border-[#ffcb74] hover:bg-[#ffcb74] hover:text-[#111111]"
-                          >
-                            Pause
-                          </Button>
-                          <Button className="bg-[#ffcb74] hover:bg-[#ffcb74]/80 text-[#111111] font-semibold">
-                            Next Question
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                      </CardContent>
+                    </Card>
 
-                {/* Previous Interview Results */}
-                <Card className="bg-[#111111]/80 border-[#ffcb74]/20">
-                  <CardHeader>
-                    <CardTitle className="text-lg text-[#f6f6f6]">
-                      Previous Practice Sessions
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {[
-                        {
-                          date: "Dec 15, 2024",
-                          score: 8.5,
-                          feedback: "Great technical answers",
-                        },
-                        {
-                          date: "Dec 10, 2024",
-                          score: 7.2,
-                          feedback: "Work on behavioral questions",
-                        },
-                      ].map((session, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 bg-[#2f2f2f] rounded-lg border border-[#ffcb74]/20"
-                        >
-                          <div>
-                            <div className="font-medium text-[#f6f6f6]">
-                              {session.date}
-                            </div>
-                            <div className="text-sm text-[#f6f6f6]/70">
-                              {session.feedback}
-                            </div>
+                    {/* Interview Start */}
+                    {selectedCompany && (
+                      <Card className="bg-[#111111]/80 border-[#ffcb74]/20">
+                        <CardHeader>
+                          <CardTitle className="flex items-center text-[#f6f6f6]">
+                            <MessageSquare className="mr-2 h-5 w-5 text-[#ffcb74]" />
+                            Video Interview with Shona
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-center py-8">
+                          <div className="w-20 h-20 bg-[#ffcb74]/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <User className="h-10 w-10 text-[#ffcb74]" />
                           </div>
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-[#ffcb74]">
-                              {session.score}/10
-                            </div>
-                            <div className="text-xs text-[#f6f6f6]/50">
-                              Score
-                            </div>
+                          <h3 className="text-lg font-semibold mb-2 text-[#f6f6f6]">
+                            Meet Your AI Interviewer: Shona
+                          </h3>
+                          <p className="text-[#f6f6f6]/70 mb-6 max-w-md mx-auto">
+                            Shona is an experienced HR professional who will conduct your interview using advanced AI technology with video avatar. She'll ask relevant questions and provide real-time feedback.
+                          </p>
+                          <div className="bg-[#2f2f2f] rounded-lg p-4 mb-6 border border-[#ffcb74]/20">
+                            <h4 className="font-semibold text-[#ffcb74] mb-2">Interviewing for:</h4>
+                            <p className="text-[#f6f6f6]">{selectedCompany.company?.name}</p>
+                            <p className="text-[#f6f6f6]/70">{selectedCompany.title}</p>
                           </div>
+                          <Button 
+                            onClick={() => setIsInterviewActive(true)}
+                            className="bg-[#ffcb74] hover:bg-[#ffcb74]/80 text-[#111111] font-semibold"
+                          >
+                            Start Video Interview with Shona
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Previous Interview Results */}
+                    <Card className="bg-[#111111]/80 border-[#ffcb74]/20">
+                      <CardHeader>
+                        <CardTitle className="text-lg text-[#f6f6f6]">
+                          Previous Video Interview Sessions
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {interviewSessions.length > 0 ? (
+                            interviewSessions.map((session, index) => (
+                              <div
+                                key={session.id || index}
+                                className="flex items-center justify-between p-3 bg-[#2f2f2f] rounded-lg border border-[#ffcb74]/20"
+                              >
+                                <div>
+                                  <div className="font-medium text-[#f6f6f6]">
+                                    {new Date(session.created_at).toLocaleDateString()}
+                                  </div>
+                                  <div className="text-sm text-[#f6f6f6]/70">
+                                    {session.feedback || "Video interview completed"}
+                                  </div>
+                                  <div className="text-xs text-[#f6f6f6]/50">
+                                    {session.questions_asked} questions answered
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-lg font-bold text-[#ffcb74]">
+                                    {session.score ? `${session.score}/10` : "Completed"}
+                                  </div>
+                                  <div className="text-xs text-[#f6f6f6]/50">
+                                    {session.status}
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-center py-8 text-[#f6f6f6]/50">
+                              <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                              <p>No video interview sessions yet</p>
+                              <p className="text-sm">Complete your first video interview to see results here</p>
+                            </div>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                      </CardContent>
+                    </Card>
+                  </>
+                )}
               </TabsContent>
 
               <TabsContent value="applications" className="space-y-6">

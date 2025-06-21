@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Lightbulb, Users, TrendingUp, FileText, CheckCircle, Clock, Sparkles, Target, DollarSign, Briefcase, MapPin, Building2 } from "lucide-react"
+import { Lightbulb, Users, TrendingUp, FileText, CheckCircle, Clock, Sparkles, Target, DollarSign, Briefcase, MapPin, Building2, MessageSquare } from "lucide-react"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -68,6 +68,8 @@ export default function FounderDashboard() {
   const [jobseekers, setJobseekers] = useState<any[]>([])
   const [investorsLoading, setInvestorsLoading] = useState(false)
   const [jobseekersLoading, setJobseekersLoading] = useState(false)
+  const [isInterviewActive, setIsInterviewActive] = useState(false)
+  const [interviewSessions, setInterviewSessions] = useState<any[]>([])
   
   // Job posting state
   const [jobForm, setJobForm] = useState({
@@ -623,6 +625,27 @@ export default function FounderDashboard() {
     }
   }
 
+  // Interview handlers
+  const startInterview = () => {
+    setIsInterviewActive(true);
+  };
+
+  const handleInterviewComplete = (session: any) => {
+    setIsInterviewActive(false);
+    // Reload interview sessions
+    const civicId = user?.username || user?.id;
+    if (civicId) {
+      fetch(`/api/did/sessions?civicId=${civicId}`)
+        .then(res => res.json())
+        .then(data => setInterviewSessions(data.sessions || []))
+        .catch(error => console.error("Error reloading sessions:", error));
+    }
+  };
+
+  const handleInterviewClose = () => {
+    setIsInterviewActive(false);
+  };
+
   // Show loading state while auth is loading
   if (authLoading) {
     return (
@@ -673,8 +696,8 @@ export default function FounderDashboard() {
           {/* Main Content */}
           <div className="lg:col-span-2">
             <Tabs defaultValue="idea" className="space-y-8">
-              <TabsList className="grid w-full grid-cols-5 p-1 rounded-xl bg-gray-900/50 border border-amber-500/20 backdrop-blur-sm">
-                {["idea", "team", "investors", "jobs", "pitch"].map((tab, index) => (
+              <TabsList className="grid w-full grid-cols-6 p-1 rounded-xl bg-gray-900/50 border border-amber-500/20 backdrop-blur-sm">
+                {["idea", "team", "investors", "jobs", "pitch", "interview"].map((tab, index) => (
                   <TabsTrigger
                     key={tab}
                     value={tab}
@@ -1488,6 +1511,124 @@ export default function FounderDashboard() {
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="interview" className="space-y-8 animate-fade-in-up">
+                {isInterviewActive ? (
+                  <Card className="border border-amber-500/20 rounded-2xl bg-black/80 backdrop-blur-sm">
+                    <CardContent className="text-center py-8">
+                      <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <MessageSquare className="h-10 w-10 text-amber-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold mb-2 text-white">
+                        Startup Validation System
+                      </h3>
+                      <p className="text-gray-400 mb-6 max-w-md mx-auto font-light">
+                        The startup validation system is being updated. Please check back later for the new implementation.
+                      </p>
+                      <Button 
+                        onClick={() => setIsInterviewActive(false)}
+                        className="font-light px-8 py-3 rounded-xl transition-all duration-300 bg-gradient-to-r from-amber-400 to-amber-500 text-black hover:from-amber-500 hover:to-amber-600"
+                      >
+                        Close
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <>
+                    <Card className="border border-amber-500/20 rounded-2xl bg-black/80 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-500">
+                      <CardHeader>
+                        <CardTitle className="flex items-center text-white font-light text-xl">
+                          <MessageSquare className="mr-3 h-6 w-6 text-amber-400 animate-pulse-soft" />
+                          AI Startup Mentor
+                        </CardTitle>
+                        <CardDescription className="text-gray-400 font-light leading-relaxed">
+                          Get your startup idea validated by our AI mentor with strategic insights
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-center py-8">
+                          <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <MessageSquare className="h-10 w-10 text-amber-400" />
+                          </div>
+                          <h3 className="text-lg font-semibold mb-2 text-white">
+                            Ready for Startup Validation?
+                          </h3>
+                          <p className="text-gray-400 mb-6 max-w-md mx-auto font-light">
+                            Our AI mentor will ask probing questions about your business model and provide strategic insights.
+                          </p>
+                          <div className="grid md:grid-cols-3 gap-4 mb-6">
+                            <div className="text-center p-4 bg-black/30 rounded-lg border border-amber-500/20">
+                              <div className="text-2xl font-bold text-amber-400 mb-1">15</div>
+                              <div className="text-sm text-gray-400">Minutes</div>
+                            </div>
+                            <div className="text-center p-4 bg-black/30 rounded-lg border border-amber-500/20">
+                              <div className="text-2xl font-bold text-amber-400 mb-1">6</div>
+                              <div className="text-sm text-gray-400">Questions</div>
+                            </div>
+                            <div className="text-center p-4 bg-black/30 rounded-lg border border-amber-500/20">
+                              <div className="text-2xl font-bold text-amber-400 mb-1">AI</div>
+                              <div className="text-sm text-gray-400">Insights</div>
+                            </div>
+                          </div>
+                          <Button
+                            onClick={startInterview}
+                            className="font-light px-8 py-3 rounded-xl transition-all duration-300 bg-gradient-to-r from-amber-400 to-amber-500 text-black hover:from-amber-500 hover:to-amber-600 hover:shadow-lg hover:shadow-amber-500/25 hover:scale-105"
+                          >
+                            Start Validation Session
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Previous Validation Sessions */}
+                    <Card className="border border-amber-500/20 rounded-2xl bg-black/80 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-500">
+                      <CardHeader>
+                        <CardTitle className="text-lg text-white font-light">
+                          Previous Validation Sessions
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {interviewSessions.length > 0 ? (
+                            interviewSessions.map((session, index) => (
+                              <div
+                                key={session.id || index}
+                                className="flex items-center justify-between p-3 bg-black/30 rounded-lg border border-amber-500/20"
+                              >
+                                <div>
+                                  <div className="font-medium text-white">
+                                    {new Date(session.created_at).toLocaleDateString()}
+                                  </div>
+                                  <div className="text-sm text-gray-400">
+                                    {session.feedback || "Startup validation completed"}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {session.questions_asked} questions answered
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-lg font-bold text-amber-400">
+                                    {session.score ? `${session.score}/10` : "Completed"}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {session.status}
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-center py-8 text-gray-500">
+                              <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                              <p className="font-light">No validation sessions yet</p>
+                              <p className="text-sm font-light">Complete your first session to see results here</p>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </>
+                )}
               </TabsContent>
             </Tabs>
           </div>
