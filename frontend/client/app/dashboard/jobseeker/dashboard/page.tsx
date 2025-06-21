@@ -657,18 +657,15 @@ export default function JobSeekerDashboard() {
                     <CardHeader>
                       <CardTitle className="flex items-center text-[#f6f6f6]">
                         <MessageSquare className="mr-2 h-5 w-5 text-[#ffcb74]" />
-                        AI Video Interview with Sarah
+                        AI Video Interview
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="text-center py-8">
                       <div className="w-20 h-20 bg-[#ffcb74]/20 rounded-full flex items-center justify-center mx-auto mb-4">
                         <User className="h-10 w-10 text-[#ffcb74]" />
                       </div>
-                      <h3 className="text-lg font-semibold mb-2 text-[#f6f6f6]">Meet Your AI Interviewer: Sarah</h3>
-                      <p className="text-[#f6f6f6]/70 mb-6 max-w-md mx-auto">
-                        Sarah is an experienced HR professional who will conduct your interview using advanced AI
-                        technology with real-time video avatar. She'll ask relevant questions and provide feedback.
-                      </p>
+                      <h3 className="text-lg font-semibold mb-2 text-[#f6f6f6]">Meet Your AI Interviewer</h3>
+                      
                       <div className="bg-[#2f2f2f] rounded-lg p-4 mb-6 border border-[#ffcb74]/20">
                         <h4 className="font-semibold text-[#ffcb74] mb-2">Interviewing for:</h4>
                         <p className="text-[#f6f6f6]">{selectedCompany.company?.name}</p>
