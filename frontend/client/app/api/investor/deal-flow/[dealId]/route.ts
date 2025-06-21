@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/utils/supabase/server"
+import { cookies } from 'next/headers'
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: { dealId: string } }
 ) {
   try {
-    const supabase = createClient()
+    const cookieStore = cookies()
+    const supabase = await createClient(cookieStore)
     const body = await request.json()
     const { civicId, investment_amount, notes, status } = body
 

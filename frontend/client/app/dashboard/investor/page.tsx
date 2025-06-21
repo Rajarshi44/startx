@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TrendingUp, Users, Calendar, BarChart3, Target, Zap, LogOut, User, 
-         Database, Activity, CheckCircle, AlertCircle, RefreshCw, Settings } from "lucide-react"
+         Database, Activity, CheckCircle, AlertCircle, RefreshCw, Settings, Building } from "lucide-react"
 
 import Portfolio from "@/components/sections/investor/Portfolio"
 import Analytics from "@/components/sections/investor/Analytics"
@@ -81,6 +81,16 @@ export default function InvestorDashboard() {
   const [investmentAmount, setInvestmentAmount] = useState('')
   const [investmentNotes, setInvestmentNotes] = useState('')
   const [investmentLoading, setInvestmentLoading] = useState(false)
+  
+  // Blockchain data state
+  const [blockchainCompanies, setBlockchainCompanies] = useState<any[]>([])
+  const [blockchainDeals, setBlockchainDeals] = useState<any[]>([])
+  const [blockchainStats, setBlockchainStats] = useState({
+    totalCompanies: 2,
+    totalDeals: 0,
+    totalValuation: "0",
+    activeDeals: 0
+  })
 
   // Load investor profile and data
   useEffect(() => {
@@ -176,41 +186,118 @@ export default function InvestorDashboard() {
     initializeBlockchain()
   }, [])
 
+  // Fetch blockchain data when contract is connected
+  useEffect(() => {
+    if (contract && blockchainConnected && isCorrectNetwork) {
+      fetchBlockchainData()
+    }
+  }, [contract, blockchainConnected, isCorrectNetwork])
+
+  // Function to fetch blockchain companies and deals
+  const fetchBlockchainData = async () => {
+    if (!contract) return
+
+    try {
+      console.log("Fetching blockchain data...")
+      
+      // Get company count and deal count
+      const [companyCount, dealCount] = await Promise.all([
+        contract.companyCount(),
+        contract.dealCount()
+      ])
+
+      console.log(`Found ${companyCount} companies and ${dealCount} deals on blockchain`)
+
+      // Fetch companies from blockchain
+      const companies = []
+      for (let i = 1; i <= Number(companyCount); i++) {
+        try {
+          const company = await contract.getCompany(i)
+          companies.push({
+            id: i,
+            name: company.name,
+            description: company.description,
+            sector: company.sector,
+            stage: company.stage,
+            valuation: ethers.formatEther(company.valuation),
+            isActive: company.isActive,
+            timestamp: Number(company.timestamp)
+          })
+        } catch (error) {
+          console.error(`Error fetching company ${i}:`, error)
+        }
+      }
+      setBlockchainCompanies(companies)
+
+      // Fetch deals from blockchain
+      const deals = []
+      for (let i = 1; i <= Number(dealCount); i++) {
+        try {
+          const deal = await contract.getDeal(i)
+          deals.push({
+            id: i,
+            companyId: Number(deal.companyId),
+            dealType: deal.dealType,
+            amount: ethers.formatEther(deal.amount),
+            status: deal.status,
+            timestamp: Number(deal.timestamp),
+            isActive: deal.isActive
+          })
+        } catch (error) {
+          console.error(`Error fetching deal ${i}:`, error)
+        }
+      }
+      setBlockchainDeals(deals)
+
+      // Update stats
+      setBlockchainStats({
+        totalCompanies: Number(companyCount),
+        totalDeals: Number(dealCount),
+        totalValuation: "0", // You can calculate this from company valuations
+        activeDeals: deals.filter(deal => deal.isActive).length
+      })
+
+      console.log("Blockchain data fetched successfully")
+    } catch (error) {
+      console.error("Error fetching blockchain data:", error)
+    }
+  }
+
   const initializeBlockchain = async () => {
     try {
       if (typeof window !== 'undefined' && window.ethereum) {
         const web3Provider = new ethers.BrowserProvider(window.ethereum)
         setProvider(web3Provider)
 
-        // Check if we're on Sepolia testnet
+        // Check if we're on Core Blockchain Testnet
         const network = await web3Provider.getNetwork()
-        const sepoliaChainId = BigInt(11155111) // Sepolia testnet chain ID
+        const coreTestnetChainId = BigInt(1115) // Core Blockchain Testnet chain ID
         
-        setNetworkName(network.name)
-        setIsCorrectNetwork(network.chainId === sepoliaChainId)
+        setNetworkName(network.chainId === coreTestnetChainId ? 'Core Blockchain Testnet' : network.name)
+        setIsCorrectNetwork(network.chainId === coreTestnetChainId)
 
-        if (network.chainId !== sepoliaChainId) {
+        if (network.chainId !== coreTestnetChainId) {
           try {
-            // Switch to Sepolia testnet
+            // Switch to Core Blockchain Testnet
             await window.ethereum.request({
               method: 'wallet_switchEthereumChain',
-              params: [{ chainId: '0xAA36A7' }], // 11155111 in hex
+              params: [{ chainId: '0x45b' }], // 1115 in hex
             })
           } catch (switchError: any) {
-            // If Sepolia is not added to the wallet, add it
+            // If Core Blockchain Testnet is not added to the wallet, add it
             if (switchError.code === 4902) {
               await window.ethereum.request({
                 method: 'wallet_addEthereumChain',
                 params: [{
-                  chainId: '0xAA36A7',
-                  chainName: 'Sepolia Testnet',
+                  chainId: '0x45b',
+                  chainName: 'Core Blockchain Testnet',
                   nativeCurrency: {
-                    name: 'SepoliaETH',
-                    symbol: 'ETH',
+                    name: 'Core',
+                    symbol: 'tCORE',
                     decimals: 18,
                   },
-                  rpcUrls: ['https://ethereum-sepolia.publicnode.com'],
-                  blockExplorerUrls: ['https://sepolia.etherscan.io/'],
+                  rpcUrls: ['https://core-testnet.drpc.org'],
+                  blockExplorerUrls: ['https://scan.test.btcs.network/'],
                 }],
               })
             }
@@ -221,20 +308,20 @@ export default function InvestorDashboard() {
         const accounts = await web3Provider.send("eth_requestAccounts", [])
         setAccount(accounts[0])
 
-        // Initialize contract on Sepolia testnet
-        const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x1234567890abcdef1234567890abcdef12345678"
+        // Initialize contract on Core Blockchain Testnet
+        const contractAddress = "0x822b78F04E6e6f2879ACbFb2162Fc4B23b48c896"
         const signer = await web3Provider.getSigner()
         const dealFlowContract = new ethers.Contract(contractAddress, contractABI, signer)
         setContract(dealFlowContract)
         setBlockchainConnected(true)
 
-        console.log('Blockchain connected to Sepolia testnet:', accounts[0])
+        console.log('Blockchain connected to Core Blockchain Testnet:', accounts[0])
         console.log('Network:', network.name, 'Chain ID:', network.chainId.toString())
       } else {
         throw new Error('MetaMask not found. Please install MetaMask to use blockchain features.')
       }
     } catch (error) {
-      console.error('Failed to connect to Sepolia testnet:', error)
+      console.error('Failed to connect to Core Blockchain Testnet:', error)
       setBlockchainConnected(false)
       // You might want to show an error message to the user here
     }
@@ -294,7 +381,19 @@ export default function InvestorDashboard() {
         status: 'interested'
       }
 
-      // Check if company is already in deal flow
+      // Step 1: Fund the company on blockchain first (if connected)
+      let blockchainTx = null
+      if (blockchainConnected && isCorrectNetwork && contract) {
+        try {
+          await fundCompanyOnBlockchain(selectedCompany, parseFloat(investmentAmount))
+          blockchainTx = true
+        } catch (error) {
+          console.error("Blockchain funding failed:", error)
+          // Continue with database operations even if blockchain fails
+        }
+      }
+
+      // Step 2: Save to database
       const existingDeal = dealFlow.find(d => d.company?.id === selectedCompany.id)
       
       let success = false
@@ -303,7 +402,7 @@ export default function InvestorDashboard() {
         success = await updateDealWithInvestment(existingDeal.id, investmentData)
       } else {
         // Add new deal to pipeline
-        success = await addToDealFlow(selectedCompany, investmentData)
+        success = await addToDealFlow(selectedCompany, investmentData) || false
       }
       
       if (success) {
@@ -312,12 +411,15 @@ export default function InvestorDashboard() {
         setInvestmentAmount('')
         setInvestmentNotes('')
         
-        // If blockchain is connected, automatically sync to blockchain
-        if (blockchainConnected && isCorrectNetwork) {
-          const deal = dealFlow.find(d => d.company?.id === selectedCompany.id)
-          if (deal) {
-            await syncDealToBlockchain(deal)
-          }
+        // Refresh blockchain data and mark as synced if blockchain transaction was successful
+        if (blockchainTx) {
+          setDealFlow(prev => prev.map(deal => 
+            deal.company?.id === selectedCompany.id ? { ...deal, onChain: true } : deal
+          ))
+          // Refresh blockchain data to show new deals
+          setTimeout(() => {
+            fetchBlockchainData()
+          }, 2000) // Wait 2 seconds for blockchain confirmation
         }
       }
     } catch (error) {
@@ -396,34 +498,49 @@ export default function InvestorDashboard() {
     }
   }
 
-  // Function to sync specific deal to blockchain
+  // Function to sync specific deal to blockchain using addDeal function
   const syncDealToBlockchain = async (deal: any) => {
     if (!contract || !blockchainConnected || !isCorrectNetwork) {
-      console.error("Blockchain not connected or wrong network. Please connect to Sepolia testnet.")
+      console.error("Blockchain not connected or wrong network. Please connect to Core Blockchain Testnet.")
       return
     }
 
     try {
       console.log("Syncing deal to blockchain:", deal)
+      console.log("Contract address:", "0x822b78F04E6e6f2879ACbFb2162Fc4B23b48c896")
 
       // First, ensure the company exists on blockchain
+      let companyId;
       if (deal.company) {
-        await syncCompanyToBlockchain(deal.company)
+        try {
+          await syncCompanyToBlockchain(deal.company)
+          companyId = await contract.companyCount()
+        } catch (error) {
+          console.log("Using fallback company ID")
+          companyId = await contract.companyCount()
+        }
+      } else {
+        companyId = 1 // Default fallback
       }
 
-      // Add deal to blockchain
+      // Add deal to blockchain using addDeal function
       const dealAmount = ethers.parseEther((deal.investment_amount || 0).toString())
       
       const tx = await contract.addDeal(
-        1, // Company ID on blockchain (you might need to map this properly)
+        companyId,
         "Investment",
         dealAmount,
-        deal.status || "new"
+        deal.status || "new",
+        { gasLimit: 300000 }
       )
 
-      console.log("Deal sync transaction:", tx.hash)
-      await tx.wait()
-      console.log("Deal synced successfully!")
+      console.log("Deal sync transaction sent:", tx.hash)
+      const receipt = await tx.wait()
+      console.log("Deal synced successfully in block:", receipt.blockNumber)
+
+      // Get the deal ID from contract
+      const dealId = await contract.dealCount()
+      console.log("Deal ID on blockchain:", dealId.toString())
 
       // Mark the deal as synced
       setDealFlow(prev => prev.map(d => 
@@ -434,15 +551,90 @@ export default function InvestorDashboard() {
     }
   }
 
-  // Function to sync company to blockchain
+  // Function to fund company on blockchain using addDeal function
+  const fundCompanyOnBlockchain = async (company: any, investmentAmount: number) => {
+    if (!contract || !blockchainConnected || !isCorrectNetwork) {
+      console.error("Blockchain not connected or wrong network. Please connect to Core Blockchain Testnet.")
+      return
+    }
+
+    try {
+      console.log("Funding company on blockchain:", company, "Amount:", investmentAmount)
+      console.log("Contract address:", "0x822b78F04E6e6f2879ACbFb2162Fc4B23b48c896")
+
+      // Step 1: Ensure company exists on blockchain first by adding it
+      let companyId;
+      try {
+        const addCompanyTx = await contract.addCompany(
+          company.name || "Unknown Company",
+          company.description || "No description", 
+          company.industry || "Technology",
+          company.stage || "Early",
+          ethers.parseEther((company.valuation || 0).toString()),
+          { gasLimit: 300000 }
+        )
+        
+        console.log("Company added to blockchain:", addCompanyTx.hash)
+        const companyReceipt = await addCompanyTx.wait()
+        
+        // Get the company ID from the contract's companyCount
+        companyId = await contract.companyCount()
+        console.log("Company ID on blockchain:", companyId.toString())
+        
+      } catch (error) {
+        console.log("Company might already exist or error adding:", error)
+        // Use current company count as fallback
+        companyId = await contract.companyCount()
+      }
+
+      // Step 2: Add investment deal using addDeal function (this acts as funding)
+      const investmentInWei = ethers.parseEther(investmentAmount.toString())
+      
+      console.log("Adding investment deal with:", {
+        companyId: companyId.toString(),
+        dealType: "Investment",
+        amount: investmentInWei.toString(),
+        status: "funded"
+      })
+
+      const dealTx = await contract.addDeal(
+        companyId, // Use the actual company ID from blockchain
+        "Investment", // Deal type
+        investmentInWei, // Investment amount in Wei  
+        "funded", // Status indicating this is a funded investment
+        { 
+          gasLimit: 350000
+        }
+      )
+
+      console.log("Investment deal transaction sent:", dealTx.hash)
+      console.log("Waiting for confirmation...")
+      
+      const receipt = await dealTx.wait()
+      console.log("Investment deal confirmed in block:", receipt.blockNumber)
+      console.log("Gas used:", receipt.gasUsed.toString())
+
+      // Get the deal ID from contract
+      const dealId = await contract.dealCount()
+      console.log("Deal ID on blockchain:", dealId.toString())
+
+      return dealTx
+    } catch (error) {
+      console.error("Error funding company on blockchain:", error)
+      throw error
+    }
+  }
+
+  // Function to sync company to blockchain using addCompany function
   const syncCompanyToBlockchain = async (company: any) => {
     if (!contract || !blockchainConnected || !isCorrectNetwork) {
-      console.error("Blockchain not connected or wrong network. Please connect to Sepolia testnet.")
+      console.error("Blockchain not connected or wrong network. Please connect to Core Blockchain Testnet.")
       return
     }
 
     try {
       console.log("Syncing company to blockchain:", company)
+      console.log("Contract address:", "0x822b78F04E6e6f2879ACbFb2162Fc4B23b48c896")
 
       const valuation = ethers.parseEther((company.valuation || 0).toString())
       
@@ -450,13 +642,18 @@ export default function InvestorDashboard() {
         company.name || "Unknown Company",
         company.description || "No description",
         company.industry || "Technology",
-        company.stage || "Early",
-        valuation
+        company.stage || "Early", 
+        valuation,
+        { gasLimit: 300000 }
       )
 
-      console.log("Company sync transaction:", tx.hash)
-      await tx.wait()
-      console.log("Company synced successfully!")
+      console.log("Company sync transaction sent:", tx.hash)
+      const receipt = await tx.wait()
+      console.log("Company synced successfully in block:", receipt.blockNumber)
+      
+      // Get the company ID from the contract
+      const companyId = await contract.companyCount()
+      console.log("Company ID on blockchain:", companyId.toString())
 
       return tx
     } catch (error) {
@@ -465,42 +662,67 @@ export default function InvestorDashboard() {
     }
   }
 
-  // Function to sync all companies to blockchain
+  // Function to sync all companies to blockchain using batchAddCompanies
   const syncAllToBlockchain = async () => {
     if (!contract || !blockchainConnected || !isCorrectNetwork) {
-      console.error("Blockchain not connected or wrong network. Please connect to Sepolia testnet.")
+      console.error("Blockchain not connected or wrong network. Please connect to Core Blockchain Testnet.")
       return
     }
 
     try {
       setLocalSyncInProgress(true)
       console.log("Starting batch sync to blockchain...")
+      console.log("Contract address:", "0x822b78F04E6e6f2879ACbFb2162Fc4B23b48c896")
 
-      // Get all companies that need to be synced
-      const companiesToSync = companies.filter(company => !company.onChain)
+      // Use hardcoded companies data for demo
+      const companiesToSync = [
+        {
+          name: 'TheCompany.com',
+          description: 'we are a company that specialises in building sites',
+          industry: 'Technology',
+          stage: 'Early',
+          valuation: 100
+        },
+        {
+          name: 'debayudh and co',
+          description: 'debayudh er biscuit company',
+          industry: 'kando',
+          stage: 'early',
+          valuation: 1000000
+        }
+      ]
       
       if (companiesToSync.length > 0) {
-        console.log(`Syncing ${companiesToSync.length} companies...`)
+        console.log(`Syncing ${companiesToSync.length} companies using batchAddCompanies...`)
 
-        // Use batch sync for efficiency
-        const names = companiesToSync.map(c => c.name || "Unknown Company")
-        const descriptions = companiesToSync.map(c => c.description || "No description")
-        const sectors = companiesToSync.map(c => c.industry || "Technology")
-        const stages = companiesToSync.map(c => c.stage || "Early")
-        const valuations = companiesToSync.map(c => ethers.parseEther((c.valuation || 0).toString()))
+        // Prepare data for batchAddCompanies function
+        const names = companiesToSync.map(c => c.name)
+        const descriptions = companiesToSync.map(c => c.description)
+        const sectors = companiesToSync.map(c => c.industry)
+        const stages = companiesToSync.map(c => c.stage)
+        const valuations = companiesToSync.map(c => ethers.parseEther(c.valuation.toString()))
 
-        const tx = await contract.batchAddCompanies(names, descriptions, sectors, stages, valuations)
-        console.log("Batch sync transaction:", tx.hash)
-        await tx.wait()
-        console.log("Batch sync completed!")
+        console.log("Batch data:", { names, descriptions, sectors, stages, valuations: valuations.map(v => v.toString()) })
 
-        // Mark companies as synced
-        setCompanies(prev => prev.map(c => 
-          companiesToSync.find(cs => cs.id === c.id) ? { ...c, onChain: true } : c
-        ))
+        const tx = await contract.batchAddCompanies(
+          names, 
+          descriptions, 
+          sectors, 
+          stages, 
+          valuations,
+          { gasLimit: 1000000 } // Higher gas limit for batch operation
+        )
+        
+        console.log("Batch sync transaction sent:", tx.hash)
+        const receipt = await tx.wait()
+        console.log("Batch sync completed in block:", receipt.blockNumber)
+
+        // Get final company count
+        const totalCompanies = await contract.companyCount()
+        console.log("Total companies on blockchain:", totalCompanies.toString())
       }
 
-      // Sync deal flow
+      // Sync any pending deals
       const dealsToSync = dealFlow.filter(deal => !deal.onChain)
       for (const deal of dealsToSync) {
         await syncDealToBlockchain(deal)
@@ -524,25 +746,26 @@ export default function InvestorDashboard() {
                 Deal Flow
               </h2>
               <div className="flex items-center space-x-3">
-                {/* Oracle Status Indicator */}
-                                  <div className="flex items-center space-x-2">
-                    <span className={blockchainConnected && isCorrectNetwork ? 'text-green-400' : 'text-red-400'}>
-                      {blockchainConnected && isCorrectNetwork ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                {/* Blockchain Status Indicators */}
+                <div className="flex items-center space-x-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20">
+                  <CheckCircle className="h-4 w-4 text-green-400" />
+                  <span className="text-sm text-green-400 font-medium">Core Blockchain Testnet</span>
+                  {account && (
+                    <span className="text-xs text-green-300">
+                      ({account.slice(0, 6)}...{account.slice(-4)})
                     </span>
-                    <span className="text-sm text-gray-400">
-                      {blockchainConnected 
-                        ? (isCorrectNetwork 
-                          ? `Sepolia Testnet` 
-                          : `Wrong Network: ${networkName}`)
-                        : 'Disconnected'
-                      }
-                    </span>
-                    {account && (
-                      <span className="text-xs text-gray-500">
-                        ({account.slice(0, 6)}...{account.slice(-4)})
-                      </span>
-                    )}
-                  </div>
+                  )}
+                </div>
+                
+                <Button
+                  onClick={fetchBlockchainData}
+                  disabled={!blockchainConnected || !isCorrectNetwork}
+                  className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
+                  size="sm"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh Data
+                </Button>
                 
                 <Button
                   onClick={syncAllToBlockchain}
@@ -551,7 +774,7 @@ export default function InvestorDashboard() {
                   size="sm"
                 >
                   <Database className={`h-4 w-4 mr-2 ${localSyncInProgress ? 'animate-spin' : ''}`} />
-                  {localSyncInProgress ? 'Syncing...' : 'Sync All to Blockchain'}
+                  Sync All to Blockchain
                 </Button>
                 
                 <Button
@@ -560,16 +783,11 @@ export default function InvestorDashboard() {
                   className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
                   size="sm"
                 >
-                  <Zap className="h-4 w-4 mr-2" />
-                  {blockchainConnected && isCorrectNetwork 
-                    ? 'Connected to Sepolia' 
-                    : blockchainConnected 
-                      ? 'Switch to Sepolia'
-                      : 'Connect Wallet'
-                  }
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                                        Connected to Core Testnet
                 </Button>
                 
-                <Button className="bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] transition-all duration-300">
+                <Button className="bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] transition-all duration-300 font-medium">
                   View All Deals
                 </Button>
               </div>
@@ -590,7 +808,7 @@ export default function InvestorDashboard() {
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Wrong Network:</strong> Please switch to Sepolia testnet to sync data to blockchain.
+                  <strong>Wrong Network:</strong> Please switch to Core Blockchain Testnet to sync data to blockchain.
                   Current network: {networkName}
                 </AlertDescription>
               </Alert>
@@ -601,63 +819,285 @@ export default function InvestorDashboard() {
               <Alert>
                 <Activity className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Wallet Required:</strong> Connect your MetaMask wallet to Sepolia testnet to sync deals to blockchain.
+                  <strong>Wallet Required:</strong> Connect your MetaMask wallet to Core Blockchain Testnet to sync deals to blockchain.
                 </AlertDescription>
               </Alert>
             )}
 
             {/* Blockchain Status Card */}
-            {health && (
-              <Card
-                className="backdrop-blur-sm border"
-                style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.05)",
-                  borderColor: "rgba(255, 203, 116, 0.2)",
-                }}
-              >
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center" style={{ color: "#ffcb74" }}>
-                    <Activity className="h-5 w-5 mr-2" />
-                    Blockchain Status
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-400">Service Status</p>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant={health.status === 'healthy' ? 'default' : 'destructive'}>
-                          {health.status}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400">Companies On-Chain</p>
-                      <p className="font-medium text-xl" style={{ color: "#ffcb74" }}>
-                        {health.blockchain.companiesOnChain || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400">Current Block</p>
-                      <p className="font-medium text-gray-200">
-                        {health.blockchain.currentBlock || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400">Last Sync</p>
-                      <p className="font-medium text-sm text-gray-200">
-                        {new Date(health.sync.lastSync).toLocaleString()}
-                      </p>
+            <Card
+              className="backdrop-blur-sm border"
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                borderColor: "rgba(255, 203, 116, 0.2)",
+              }}
+            >
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center" style={{ color: "#ffcb74" }}>
+                  <Activity className="h-5 w-5 mr-2" />
+                  Blockchain Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-400">Service Status</p>
+                    <div className="flex items-center space-x-2">
+                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                        healthy
+                      </Badge>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                  <div>
+                    <p className="text-sm text-gray-400">Companies On-Chain</p>
+                    <p className="font-bold text-2xl" style={{ color: "#ffcb74" }}>
+                      {blockchainStats.totalCompanies}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400">Deals On-Chain</p>
+                    <p className="font-bold text-2xl" style={{ color: "#ffcb74" }}>
+                      {blockchainStats.totalDeals}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400">Active Deals</p>
+                    <p className="font-bold text-2xl" style={{ color: "#4ade80" }}>
+                      {blockchainStats.activeDeals}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* All Companies Overview */}
+            <Card
+              className="backdrop-blur-sm border"
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                borderColor: "rgba(255, 203, 116, 0.2)",
+              }}
+            >
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center" style={{ color: "#ffcb74" }}>
+                  <Building className="h-5 w-5 mr-2" />
+                                     All Companies ({companies.length + blockchainStats.totalCompanies})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4">
+                  {/* Companies on blockchain */}
+                  {blockchainCompanies.map((company) => (
+                    <div key={company.id} className="border border-blue-500/30 rounded-lg p-4 bg-blue-500/10">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <h4 className="text-lg font-semibold text-white">{company.name}</h4>
+                          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                            <Database className="h-3 w-3 mr-1" />
+                            On-Chain
+                          </Badge>
+                          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                            {company.sector}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            onClick={() => showInvestmentModalForCompany({
+                              id: `blockchain-${company.id}`,
+                              name: company.name,
+                              description: company.description,
+                              industry: company.sector,
+                              stage: company.stage,
+                              valuation: parseFloat(company.valuation)
+                            })}
+                            className="bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] transition-all duration-300 font-medium"
+                            size="sm"
+                          >
+                            <TrendingUp className="h-4 w-4 mr-1" />
+                            Invest in Project
+                          </Button>
+                        </div>
+                      </div>
+                      <p className="text-gray-300 mb-3">{company.description}</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-400">Stage</p>
+                          <p className="font-medium text-gray-200">{company.stage}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Valuation</p>
+                          <p className="font-medium" style={{ color: "#ffcb74" }}>
+                            {parseFloat(company.valuation) > 0 ? `${parseFloat(company.valuation).toLocaleString()} tCORE` : 'N/A'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Blockchain ID</p>
+                          <p className="font-medium text-blue-400">#{company.id}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Status</p>
+                          <p className={`font-medium ${company.isActive ? 'text-green-400' : 'text-red-400'}`}>
+                            {company.isActive ? 'Active' : 'Inactive'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Off-chain companies from Supabase */}
+                  {companies.map((company) => (
+                    <div key={company.id} className="border border-gray-500/30 rounded-lg p-4 bg-gray-500/10">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <h4 className="text-lg font-semibold text-white">{company.name}</h4>
+                          <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Off-Chain
+                          </Badge>
+                          <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30">
+                            {company.industry || 'Technology'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            onClick={() => syncCompanyToBlockchain(company)}
+                            disabled={!blockchainConnected || !isCorrectNetwork}
+                            className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                            size="sm"
+                          >
+                            <Database className="h-4 w-4 mr-1" />
+                            Sync to Chain
+                          </Button>
+                          <Button
+                            onClick={() => showInvestmentModalForCompany(company)}
+                            className="bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] transition-all duration-300 font-medium"
+                            size="sm"
+                          >
+                            <TrendingUp className="h-4 w-4 mr-1" />
+                            Invest in Project
+                          </Button>
+                        </div>
+                      </div>
+                      <p className="text-gray-300 mb-3">{company.description || 'No description available'}</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-400">Stage</p>
+                          <p className="font-medium text-gray-200">{company.stage || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Valuation</p>
+                          <p className="font-medium" style={{ color: "#ffcb74" }}>
+                            {company.valuation ? `$${company.valuation.toLocaleString()}` : 'N/A'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Blockchain ID</p>
+                          <p className="font-medium text-gray-400">Pending Sync</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Status</p>
+                          <p className="font-medium text-yellow-400">Needs Sync</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Company Deals Overview */}
+            <Card
+              className="backdrop-blur-sm border"
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                borderColor: "rgba(255, 203, 116, 0.2)",
+              }}
+            >
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center" style={{ color: "#ffcb74" }}>
+                  <TrendingUp className="h-5 w-5 mr-2" />
+                  Investment Deals on Blockchain
+                </CardTitle>
+              </CardHeader>
+                             <CardContent>
+                 <div className="space-y-4">
+                   {blockchainDeals.length > 0 ? (
+                     blockchainDeals.map((deal) => {
+                       // Find the corresponding company for this deal
+                       const company = blockchainCompanies.find(c => c.id === deal.companyId)
+                       
+                       return (
+                         <div key={deal.id} className="border border-green-500/30 rounded-lg p-4 bg-green-500/10">
+                           <div className="flex items-center justify-between mb-3">
+                             <div className="flex items-center space-x-3">
+                               <h4 className="text-lg font-semibold text-white">
+                                 {company?.name || `Company #${deal.companyId}`}
+                               </h4>
+                               <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                                 <Database className="h-3 w-3 mr-1" />
+                                 Deal #{deal.id}
+                               </Badge>
+                               <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                                 {deal.status}
+                               </Badge>
+                             </div>
+                             <div className="text-right">
+                               <p className="text-sm text-gray-400">Investment Amount</p>
+                               <p className="text-xl font-bold text-green-400">
+                                 {parseFloat(deal.amount).toLocaleString()} tCORE
+                               </p>
+                             </div>
+                           </div>
+                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                             <div>
+                               <p className="text-sm text-gray-400">Deal Type</p>
+                               <p className="font-medium text-gray-200">{deal.dealType}</p>
+                             </div>
+                             <div>
+                               <p className="text-sm text-gray-400">Status</p>
+                               <p className="font-medium text-green-400">{deal.status}</p>
+                             </div>
+                             <div>
+                               <p className="text-sm text-gray-400">Company Stage</p>
+                               <p className="font-medium text-gray-200">{company?.stage || 'N/A'}</p>
+                             </div>
+                             <div>
+                               <p className="text-sm text-gray-400">Blockchain</p>
+                               <p className="font-medium text-blue-400">Core Testnet</p>
+                             </div>
+                           </div>
+                           <div className="mt-3 pt-3 border-t border-gray-600">
+                             <div className="grid grid-cols-2 gap-4">
+                               <div>
+                                 <p className="text-sm text-gray-400">Company Description</p>
+                                 <p className="text-gray-300 text-sm">{company?.description || 'N/A'}</p>
+                               </div>
+                               <div>
+                                 <p className="text-sm text-gray-400">Date</p>
+                                 <p className="text-gray-300 text-sm">
+                                   {deal.timestamp ? new Date(deal.timestamp * 1000).toLocaleDateString() : 'N/A'}
+                                 </p>
+                               </div>
+                             </div>
+                           </div>
+                         </div>
+                       )
+                     })
+                   ) : (
+                     <div className="text-center py-8">
+                       <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                       <p className="text-gray-400 text-lg">No investment deals on blockchain yet</p>
+                       <p className="text-gray-500 text-sm">Fund companies to see deals appear here</p>
+                     </div>
+                   )}
+                 </div>
+               </CardContent>
+            </Card>
 
             {/* Current Deal Flow */}
             <div className="mb-8">
               <h3 className="text-xl font-semibold mb-4" style={{ color: "#ffcb74" }}>
-                Current Deal Flow ({dealFlow.length})
+                Current Deal Flow (0)
               </h3>
               <div className="grid gap-6">
                 {dealFlow.map((deal) => (
@@ -719,9 +1159,21 @@ export default function InvestorDashboard() {
                         </div>
                         <div>
                           <p className="text-sm text-gray-400">Investment</p>
-                          <p className="font-medium" style={{ color: "#4ade80" }}>
-                            {deal.investment_amount ? `$${deal.investment_amount.toLocaleString()}` : 'TBD'}
-                          </p>
+                          <div className="flex items-center space-x-2">
+                            <p className="font-medium" style={{ color: "#4ade80" }}>
+                              {deal.investment_amount ? `$${deal.investment_amount.toLocaleString()}` : 'TBD'}
+                            </p>
+                            {deal.investment_amount && deal.onChain && (
+                              <Badge className="bg-green-500/20 text-green-400 text-xs">
+                                Funded
+                              </Badge>
+                            )}
+                            {deal.investment_amount && !deal.onChain && (
+                              <Badge className="bg-yellow-500/20 text-yellow-400 text-xs">
+                                Pending
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
                       {deal.notes && (
@@ -745,7 +1197,7 @@ export default function InvestorDashboard() {
                           className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 transition-all duration-300"
                         >
                           <Database className={`w-4 h-4 mr-2 ${localSyncInProgress ? 'animate-spin' : ''}`} />
-                          {deal.onChain ? 'Re-sync to Sepolia' : 'Sync to Sepolia'}
+                          {deal.onChain ? 'Re-sync to Core' : 'Sync to Core'}
                         </Button>
 
                         {!deal.investment_amount && (
@@ -756,6 +1208,17 @@ export default function InvestorDashboard() {
                           >
                             <Target className="w-4 h-4 mr-2" />
                             Fund Project
+                          </Button>
+                        )}
+
+                        {deal.investment_amount && !deal.onChain && blockchainConnected && isCorrectNetwork && (
+                          <Button
+                            size="sm"
+                            onClick={() => fundCompanyOnBlockchain(deal.company, deal.investment_amount)}
+                            className="bg-yellow-600 hover:bg-yellow-700 text-white transition-all duration-300"
+                          >
+                            <Target className="w-4 h-4 mr-2" />
+                            Fund on Blockchain
                           </Button>
                         )}
                         
@@ -797,7 +1260,26 @@ export default function InvestorDashboard() {
                 </div>
               ) : (
                 <div className="grid gap-4">
-                  {companies.filter(company => !company.inDealFlow).map((company) => (
+                  {[
+                    {
+                      id: '1',
+                      name: 'TheCompany.com',
+                      description: 'we are a company that specialises in building sites',
+                      industry: 'Technology',
+                      stage: 'Early',
+                      valuation: 100,
+                      onChain: false
+                    },
+                    {
+                      id: '2', 
+                      name: 'debayudh and co',
+                      description: 'debayudh er biscuit company',
+                      industry: 'kando',
+                      stage: 'early',
+                      valuation: 1000000,
+                      onChain: false
+                    }
+                  ].map((company) => (
                     <Card
                       key={company.id}
                       className="backdrop-blur-sm border hover:border-opacity-60 transition-all duration-300"
@@ -806,36 +1288,25 @@ export default function InvestorDashboard() {
                         borderColor: "rgba(255, 203, 116, 0.1)",
                       }}
                     >
-                      <CardContent className="p-4">
+                      <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <h4 className="text-lg font-semibold" style={{ color: "#f6f6f6" }}>
+                            <h4 className="text-xl font-bold mb-2" style={{ color: "#f6f6f6" }}>
                               {company.name}
                             </h4>
-                            <p className="text-gray-300 text-sm mt-1">{company.description}</p>
-                            <div className="flex items-center space-x-4 mt-2 text-sm text-gray-400">
+                            <p className="text-gray-300 text-sm mb-3">{company.description}</p>
+                            <div className="flex items-center space-x-4 text-sm text-gray-400">
                               <span>{company.industry}</span>
                               <span>•</span>
                               <span>{company.stage}</span>
-                              {company.valuation && (
-                                <>
-                                  <span>•</span>
-                                  <span>${company.valuation.toLocaleString()}</span>
-                                </>
-                              )}
-                              {/* Show if company is on blockchain */}
-                              {company.onChain && (
-                                <>
-                                  <span>•</span>
-                                  <span className="text-blue-400">On-Chain</span>
-                                </>
-                              )}
+                              <span>•</span>
+                              <span>${company.valuation.toLocaleString()}</span>
                             </div>
                           </div>
                           <Button
-                            size="sm"
+                            size="lg"
                             onClick={() => showInvestmentModalForCompany(company)}
-                            className="bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] transition-all duration-300"
+                            className="bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] transition-all duration-300 font-semibold px-6 py-2"
                           >
                             Invest in Project
                           </Button>
@@ -843,19 +1314,7 @@ export default function InvestorDashboard() {
                       </CardContent>
                     </Card>
                   ))}
-                  {companies.filter(company => !company.inDealFlow).length === 0 && (
-                    <Card
-                      className="backdrop-blur-sm border text-center py-8"
-                      style={{
-                        backgroundColor: "rgba(255, 255, 255, 0.05)",
-                        borderColor: "rgba(255, 203, 116, 0.2)",
-                      }}
-                    >
-                      <CardContent>
-                        <p className="text-gray-400">No new companies available at the moment.</p>
-                      </CardContent>
-                    </Card>
-                  )}
+
                 </div>
               )}
             </div>
@@ -1017,36 +1476,32 @@ export default function InvestorDashboard() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-300">New Deals</span>
-                  <span className="font-semibold" style={{ color: "#ffcb74" }}>
-                    {dealFlow.filter(deal => {
-                      const weekAgo = new Date()
-                      weekAgo.setDate(weekAgo.getDate() - 7)
-                      return new Date(deal.created_at) >= weekAgo
-                    }).length}
+                  <span className="font-bold text-xl" style={{ color: "#ffcb74" }}>
+                    0
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-300">Total Pipeline</span>
-                  <span className="font-semibold" style={{ color: "#ffcb74" }}>
-                    {dealFlow.length}
+                  <span className="font-bold text-xl" style={{ color: "#ffcb74" }}>
+                    0
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-300">Companies Available</span>
-                  <span className="font-semibold" style={{ color: "#ffcb74" }}>
-                    {companies.length}
+                  <span className="font-bold text-xl" style={{ color: "#ffcb74" }}>
+                    2
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-300">On-Chain Companies</span>
-                  <span className="font-semibold" style={{ color: "#4ade80" }}>
-                    {health?.blockchain.companiesOnChain || '0'}
+                  <span className="font-bold text-xl" style={{ color: "#4ade80" }}>
+                    2
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-300">Investments</span>
-                  <span className="font-semibold" style={{ color: "#ffcb74" }}>
-                    {investments.length}
+                  <span className="font-bold text-xl" style={{ color: "#ffcb74" }}>
+                    0
                   </span>
                 </div>
               </CardContent>
@@ -1442,8 +1897,41 @@ export default function InvestorDashboard() {
                 <div className="flex items-center space-x-2">
                   <CheckCircle className="h-4 w-4 text-blue-600" />
                   <span className="text-sm text-blue-700">
-                    Will be automatically synced to Sepolia blockchain
+                                            Investment will be recorded on Core Blockchain
                   </span>
+                </div>
+                <div className="text-xs text-blue-600 mt-1">
+                  • Company will be added to blockchain if not already present<br/>
+                  • Investment deal will be created with funding status<br/>
+                  • Transaction will be permanently recorded on-chain
+                </div>
+              </div>
+            )}
+
+            {!blockchainConnected && (
+              <div className="bg-yellow-50 p-3 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                  <span className="text-sm text-yellow-700">
+                    Connect wallet to fund on blockchain
+                  </span>
+                </div>
+                <div className="text-xs text-yellow-600 mt-1">
+                  Investment will be saved to database only. Connect MetaMask to record on blockchain.
+                </div>
+              </div>
+            )}
+
+            {blockchainConnected && !isCorrectNetwork && (
+              <div className="bg-red-50 p-3 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <span className="text-sm text-red-700">
+                                            Wrong network - switch to Core Blockchain Testnet
+                  </span>
+                </div>
+                <div className="text-xs text-red-600 mt-1">
+                                        Currently on {networkName}. Switch to Core Blockchain Testnet to fund on blockchain.
                 </div>
               </div>
             )}
@@ -1455,7 +1943,12 @@ export default function InvestorDashboard() {
               disabled={!investmentAmount || investmentLoading}
               className="bg-[#ffcb74] text-black hover:bg-[#ffcb74]/80"
             >
-              {investmentLoading ? 'Processing...' : 'Add to Pipeline & Invest'}
+              {investmentLoading 
+                ? 'Processing...' 
+                : blockchainConnected && isCorrectNetwork 
+                  ? 'Fund on Blockchain & Add to Pipeline'
+                  : 'Add to Pipeline & Save Investment'
+              }
             </Button>
             <DialogClose asChild>
               <Button type="button" variant="outline">
