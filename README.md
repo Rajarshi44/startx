@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# STARTX:CREATE.BUILD.SCALE
 
-## Getting Started
+This project is a full-stack web application called "STARTX" designed to connect entrepreneurs, investors, and mentors and job seekers in a collaborative community.Built for HACK4BENGAL 2025
 
-First, run the development server:
+### It features:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+🚀 Startup Founder Assistance
+ Idea Validation
+Provide structured feedback to assess market demand, SWOT, competitor analysis, and viability (reddit.com, hacktheprompt.com).
+Integrate with real-time Reddit and web scraping to gauge niche interest,
+Co-founder & Team Matching
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+2. 💼 Job Finder (Employee)
+Automatic profile building via Resume processing.
+Intelligent Matching
+Use insights from startup validations and team needs to recommend roles, modeled after Torre.ai’s “professional genome” approach.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+AI Interview 
+Embed an interactive interview agent for skill evaluation, with dynamic feedback and personalized onboarding.
 
-## Learn More
+3. 💰 Investor
+Curated Deal Flow
+Present startups that align with investor criteria—industry, stage, traction—based on analytics and network matching.
+Pitch Prep & Demo Tools
 
-To learn more about Next.js, take a look at the following resources:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+A community forum for real-time chat, posts, media sharing (images, voice), and networking.
+Embedded wallet authentication (Civic) for secure user access.
+Modern, responsive UI built with Next.js, Tailwind CSS, and NextJS.
+Backend powered by Solidity smart contracts(HardHat), Supabase and MongoDB Atlas and Node.js for decentralized features as well as Web2 features
+Focus on startup mentoring, investment, and collaboration.
 
-## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
