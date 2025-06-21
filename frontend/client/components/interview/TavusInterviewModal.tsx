@@ -250,9 +250,10 @@ export default function TavusInterviewModal({
       <DialogContent
         className={
           step === "interview"
-            ? "max-w-2xl p-0 bg-[#111111] border-[#ffcb74]/20 flex items-center justify-center"
+            ? "fixed inset-0 z-50 w-full h-full p-0 bg-[#111111] border-none flex items-center justify-center rounded-none"
             : "max-w-4xl h-[80vh] p-0 bg-[#111111] border-[#ffcb74]/20 overflow-y-auto"
         }
+        style={step === "interview" ? { maxWidth: '100vw', maxHeight: '100vh', borderRadius: 0 } : {}}
       >
         <DialogHeader className={step === "interview" ? "hidden" : "p-6 pb-0"}>
           <DialogTitle className="flex items-center gap-2 text-[#f6f6f6]">
@@ -264,13 +265,16 @@ export default function TavusInterviewModal({
         {(() => {
           if (step === "interview" && conversation) {
             return (
-              <iframe
-                ref={iframeRef}
-                src={conversation.conversation_url}
-                className="w-[640px] h-[400px] border-0 rounded-lg"
-                allow="camera; microphone; fullscreen"
-                title="AI Interview Session"
-              />
+              <div className="fixed inset-0 w-screen h-screen flex items-center justify-center bg-[#111111] z-50" style={{padding:0, marginLeft:750,marginTop:350}}>
+                <iframe
+                  ref={iframeRef}
+                  src={conversation.conversation_url}
+                  className="w-full h-full border-0 rounded-none"
+                  allow="camera; microphone; fullscreen"
+                  title="AI Interview Session"
+                  style={{ width: '100vw', height: '100vh', border: 0, borderRadius: 0, display: 'block' }}
+                />
+              </div>
             );
           } else if (step === "setup") {
             return (
