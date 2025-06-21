@@ -7,9 +7,9 @@ export async function POST(request: NextRequest) {
   let body: any
   try {
     body = await request.json()
-    const { personaId, civicId, jobPostingId, conversationName, replicaId } = body
+    const { personaId, civicId, jobPostingId, conversationName } = body
 
-    console.log("Conversation creation request:", { personaId, civicId, jobPostingId, conversationName, replicaId })
+    console.log("Conversation creation request:", { personaId, civicId, jobPostingId, conversationName })
 
     if (!personaId || !civicId || !jobPostingId) {
       return NextResponse.json(
@@ -30,38 +30,76 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // Create conversation with Tavus
-    let finalReplicaId = body.replicaId
-    
-    // If no replicaId provided, try to get one for the persona
-    if (!finalReplicaId) {
-      try {
-        const replicas = await tavusClient.getReplicas(personaId)
-        if (replicas && replicas.length > 0) {
-          finalReplicaId = replicas[0].replica_id
-        } else {
-          // Create a new replica if none exist
-          const newReplica = await tavusClient.createReplica(personaId, "Default Interview Replica")
-          finalReplicaId = newReplica.replica_id
-        }
-      } catch (error) {
-        console.error("Failed to get or create replica:", error)
-        return NextResponse.json(
-          {
-            error: "Failed to get or create replica for conversation",
-          },
-          { status: 500 },
+    // Get job posting details for context
+    const { data: jobPosting, error: jobError } = await supabase
+      .from("job_postings")
+      .select(`
+        *,
+        companies (
+          name,
+          description,
+          industry
         )
-      }
+      `)
+      .eq("id", jobPostingId)
+      .single()
+
+    if (jobError || !jobPosting) {
+      console.error("Job posting not found:", jobError)
+      return NextResponse.json({ error: "Job posting not found" }, { status: 404 })
     }
 
+    // Get the persona to check if it has a default_replica_id
+    let replicaId = null
+    try {
+      const persona = await tavusClient.getPersona(personaId)
+      replicaId = persona.default_replica_id
+    } catch (error) {
+      console.error("Failed to get persona:", error)
+      return NextResponse.json(
+        {
+          error: "Failed to get persona information",
+        },
+        { status: 500 },
+      )
+    }
+
+    if (!replicaId) {
+      return NextResponse.json(
+        {
+          error: "Persona does not have a default replica configured",
+        },
+        { status: 400 },
+      )
+    }
+
+    // Create detailed context for the interview
+    const companyInfo = jobPosting.companies
+    const interviewContext = `You are conducting a case study interview for the position of ${jobPosting.title} at ${companyInfo.name}.
+
+Company Information:
+- Company: ${companyInfo.name}
+- Industry: ${companyInfo.industry || 'Not specified'}
+${companyInfo.description ? `- Description: ${companyInfo.description}` : ''}
+
+Job Details:
+- Position: ${jobPosting.title}
+- Job Type: ${jobPosting.job_type || 'Full-time'}
+- Work Mode: ${jobPosting.work_mode || 'Hybrid'}
+- Location: ${jobPosting.location || 'Remote'}
+${jobPosting.skills_required ? `- Required Skills: ${jobPosting.skills_required.join(', ')}` : ''}
+${jobPosting.experience_level ? `- Experience Level: ${jobPosting.experience_level}` : ''}
+${jobPosting.description ? `- Job Description: ${jobPosting.description}` : ''}
+
+While you'll be conducting the SodaPop "Light Bolt" case study as your primary assessment, you should also be aware of this specific job context. You may reference the company and role when appropriate during the interview, especially during introductions and when asking about the candidate's interest in this specific position.`
+
     const conversationConfig = {
-      replica_id: finalReplicaId,
+      replica_id: replicaId,
       persona_id: personaId,
       conversation_name: conversationName || `Interview - ${new Date().toISOString()}`,
       callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/tavus/webhook`,
-      conversational_context: "You are conducting a job interview. Be professional, friendly, and thorough in your questioning.",
-      custom_greeting: "Hello! I'm excited to interview you today. Let's get started!",
+      conversational_context: interviewContext,
+      custom_greeting: `Hello! I'm Jane Smith, a Principal at Morrison & Blackwell. I'm excited to interview you today for the ${jobPosting.title} position at ${companyInfo.name}. Let's get started with our case study discussion!`,
       properties: {
         max_call_duration: 1800, // 30 minutes
         participant_left_timeout: 60,
@@ -115,7 +153,6 @@ export async function POST(request: NextRequest) {
       personaId: body?.personaId,
       civicId: body?.civicId,
       jobPostingId: body?.jobPostingId,
-      replicaId: body?.replicaId
     })
     return NextResponse.json(
       {

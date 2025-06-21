@@ -40,7 +40,6 @@ export default function TavusInterviewModal({
   const { toast } = useToast()
   const [step, setStep] = useState<"setup" | "creating" | "interview" | "completed">("setup")
   const [persona, setPersona] = useState<any>(null)
-  const [replica, setReplica] = useState<any>(null)
   const [conversation, setConversation] = useState<any>(null)
   const [session, setSession] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -100,24 +99,21 @@ export default function TavusInterviewModal({
         throw new Error("Job posting information is not available")
       }
 
-      const response = await fetch("/api/tavus/persona", {
+      // Use the AI interviewer persona endpoint
+      const response = await fetch("/api/tavus/persona/create-interviewer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jobPostingId: jobPosting.id,
-          civicId: civicId,
-        }),
       })
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to create interview persona")
+        throw new Error(errorData.error || "Failed to create AI interviewer persona")
       }
 
       const data = await response.json()
       setPersona(data.persona)
-      setReplica(data.replica)
-      return data
+      
+      return { persona: data.persona }
     } catch (error: any) {
       setError(error.message)
       throw error
@@ -138,11 +134,9 @@ export default function TavusInterviewModal({
 
       // Create persona if not exists
       let currentPersona = persona
-      let currentReplica = replica
       if (!currentPersona) {
         const personaData = await createPersona()
         currentPersona = personaData.persona
-        currentReplica = personaData.replica
       }
 
       const civicId = user?.username || user?.id
@@ -156,7 +150,6 @@ export default function TavusInterviewModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           personaId: currentPersona.persona_id,
-          ...(currentReplica?.replica_id && { replicaId: currentReplica.replica_id }),
           civicId: civicId,
           jobPostingId: jobPosting.id,
           conversationName: `Interview for ${jobPosting?.title || "Position"} at ${jobPosting?.company?.name || "Company"}`,
@@ -229,7 +222,6 @@ export default function TavusInterviewModal({
     }
     setStep("setup")
     setPersona(null)
-    setReplica(null)
     setConversation(null)
     setSession(null)
     setDuration(0)
@@ -293,19 +285,20 @@ export default function TavusInterviewModal({
                       <User className="h-6 w-6 text-[#ffcb74]" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold mb-2 text-[#f6f6f6]">Meet Your AI Interviewer: Sarah</h3>
+                      <h3 className="text-lg font-semibold mb-2 text-[#f6f6f6]">Meet Your AI Interviewer: Jane Smith</h3>
                       <p className="text-[#f6f6f6]/70 mb-4">
-                        Sarah is an experienced HR professional who will conduct your interview using advanced AI
-                        technology. She'll ask relevant questions about your experience and provide real-time feedback.
+                        Jane is a Principal at Morrison & Blackwell, a top-tier global consulting firm. She'll conduct a 
+                        first-round case interview focusing on the SodaPop "Light Bolt" case study, assessing your 
+                        communication skills and problem-solving approach.
                       </p>
                       <div className="grid grid-cols-3 gap-4 text-center">
                         <div className="p-3 bg-[#111111] rounded-lg border border-[#ffcb74]/20">
-                          <div className="text-2xl font-bold text-[#ffcb74] mb-1">15-30</div>
+                          <div className="text-2xl font-bold text-[#ffcb74] mb-1">25-30</div>
                           <div className="text-sm text-[#f6f6f6]/70">Minutes</div>
                         </div>
                         <div className="p-3 bg-[#111111] rounded-lg border border-[#ffcb74]/20">
-                          <div className="text-2xl font-bold text-[#ffcb74] mb-1">6-8</div>
-                          <div className="text-sm text-[#f6f6f6]/70">Questions</div>
+                          <div className="text-2xl font-bold text-[#ffcb74] mb-1">Case</div>
+                          <div className="text-sm text-[#f6f6f6]/70">Study</div>
                         </div>
                         <div className="p-3 bg-[#111111] rounded-lg border border-[#ffcb74]/20">
                           <div className="text-2xl font-bold text-[#ffcb74] mb-1">AI</div>
@@ -332,11 +325,15 @@ export default function TavusInterviewModal({
                     </div>
                     <div className="flex items-center gap-3">
                       <CheckCircle className="h-5 w-5 text-[#ffcb74]" />
-                      <span className="text-[#f6f6f6]">Find a quiet, well-lit space</span>
+                      <span className="text-[#f6f6f6]">Find a quiet, well-lit space for the interview</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <CheckCircle className="h-5 w-5 text-[#ffcb74]" />
-                      <span className="text-[#f6f6f6]">Have your resume and portfolio ready</span>
+                      <span className="text-[#f6f6f6]">Prepare to discuss your background and experience</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="h-5 w-5 text-[#ffcb74]" />
+                      <span className="text-[#f6f6f6]">Be ready for a case study discussion</span>
                     </div>
                   </div>
                 </CardContent>
