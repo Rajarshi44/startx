@@ -260,15 +260,7 @@ export default function LandingPage() {
                   Welcome, {user.username || 'User'}
                 </span>
               </div>
-              <Link href="/tavus">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-transparent border-[#ffcb74] text-[#ffcb74] hover:bg-[#ffcb74] hover:text-black transition-all duration-300"
-                >
-                  AI Video Chat
-                </Button>
-              </Link>
+              
               <Button
                 variant="outline"
                 size="sm"

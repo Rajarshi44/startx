@@ -299,6 +299,7 @@ CREATE TABLE IF NOT EXISTS interview_sessions (
   role TEXT NOT NULL CHECK (role IN ('jobseeker', 'founder', 'investor')),
   agent_id TEXT NOT NULL, -- D-ID agent ID
   stream_id TEXT NOT NULL, -- D-ID stream ID
+  job_posting_id UUID REFERENCES job_postings(id) ON DELETE SET NULL, -- Job posting being interviewed for
   status TEXT CHECK (status IN ('active', 'completed', 'cancelled')) DEFAULT 'active',
   questions_asked INTEGER DEFAULT 0,
   total_questions INTEGER DEFAULT 8,
@@ -315,6 +316,7 @@ CREATE INDEX IF NOT EXISTS idx_interview_sessions_user_id ON interview_sessions(
 CREATE INDEX IF NOT EXISTS idx_interview_sessions_role ON interview_sessions(role);
 CREATE INDEX IF NOT EXISTS idx_interview_sessions_status ON interview_sessions(status);
 CREATE INDEX IF NOT EXISTS idx_interview_sessions_created_at ON interview_sessions(created_at);
+CREATE INDEX IF NOT EXISTS idx_interview_sessions_job_posting ON interview_sessions(job_posting_id);
 
 -- =============================================
 -- SHARED TABLES
@@ -451,3 +453,15 @@ CREATE TRIGGER update_active_roles_investor_delete AFTER DELETE ON investor_prof
 
 CREATE TRIGGER update_active_roles_jobseeker_insert AFTER INSERT ON jobseeker_profiles FOR EACH ROW EXECUTE FUNCTION update_user_active_roles();
 CREATE TRIGGER update_active_roles_jobseeker_delete AFTER DELETE ON jobseeker_profiles FOR EACH ROW EXECUTE FUNCTION update_user_active_roles();
+-- Add job_posting_id to interview_sessions table
+ALTER TABLE interview_sessions 
+ADD COLUMN IF NOT EXISTS job_posting_id UUID REFERENCES job_postings(id) ON DELETE SET NULL;
+
+-- Add index for better performance
+CREATE INDEX IF NOT EXISTS idx_interview_sessions_job_posting_id ON interview_sessions(job_posting_id);
+
+-- Update the interview_sessions table comment
+COMMENT ON TABLE interview_sessions IS 'Stores AI avatar interview sessions using Tavus AI for real-time video interviews';
+COMMENT ON COLUMN interview_sessions.agent_id IS 'Tavus persona ID for the AI interviewer';
+COMMENT ON COLUMN interview_sessions.stream_id IS 'Tavus conversation ID for the interview session';
+COMMENT ON COLUMN interview_sessions.job_posting_id IS 'Reference to the job posting this interview is for';
