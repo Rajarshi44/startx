@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useUser } from "@civic/auth-web3/react"
 import { useAccount } from 'wagmi'
 import { Button } from "@/components/ui/button"
@@ -15,7 +15,6 @@ import {
   Users, 
   MessageCircle, 
   Send, 
-  Shield, 
   User, 
   ArrowLeft,
   AlertCircle,
@@ -64,39 +63,35 @@ export default function CommunityPage() {
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   
-  // Check if user is authenticated
-  useEffect(() => {
-    if (!user?.id) {
-      setIsLoading(false)
-      return
-    }
-    
-    checkUserRegistration()
-  }, [user])
-  
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-  
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === 'Enter' && newMessage.trim() && !isSending) {
-        e.preventDefault()
-        sendMessage()
+
+  const loadMessages = useCallback(async (pageNum = 1, append = false) => {
+    setIsLoadingMessages(true)
+    try {
+      const response = await fetch(`/api/community/messages?page=${pageNum}&limit=20`)
+      const data = await response.json()
+      
+      if (data.success) {
+        if (append) {
+          setMessages(prev => [...data.messages, ...prev])
+        } else {
+          setMessages(data.messages)
+        }
+        setHasMore(data.pagination.hasMore)
+        setPage(pageNum)
       }
+    } catch (error) {
+      console.error("Error loading messages:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load messages",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoadingMessages(false)
     }
-    
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [newMessage, isSending])
-  
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
-  
-  const checkUserRegistration = async () => {
+  }, [toast])
+
+  const checkUserRegistration = useCallback(async () => {
     if (!user?.id) return
     
     try {
@@ -120,8 +115,84 @@ export default function CommunityPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user, loadMessages, toast])
+
+  // Check if user is authenticated
+  useEffect(() => {
+    if (!user?.id) {
+      setIsLoading(false)
+      return
+    }
+    
+    checkUserRegistration()
+  }, [user, checkUserRegistration])
   
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  const sendMessage = useCallback(async () => {
+    if (!user?.id || !newMessage.trim() || !currentUser) return
+    
+    setIsSending(true)
+    try {
+      const response = await fetch('/api/community/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: newMessage.trim(),
+          civicId: user.id
+        }),
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setMessages(prev => [...prev, data.message])
+        setNewMessage("")
+        toast({
+          title: "Message sent",
+          description: "Your message has been posted.",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: data.error || "Failed to send message",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error("Error sending message:", error)
+      toast({
+        title: "Error",
+        description: "Failed to send message",
+        variant: "destructive"
+      })
+    } finally {
+      setIsSending(false)
+    }
+  }, [user, newMessage, currentUser, toast])
+  
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'Enter' && newMessage.trim() && !isSending) {
+        e.preventDefault()
+        sendMessage()
+      }
+    }
+    
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [newMessage, isSending, sendMessage])
+  
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
   const registerUser = async () => {
     if (!user?.id || !username.trim()) return
     
@@ -166,77 +237,6 @@ export default function CommunityPage() {
       })
     } finally {
       setIsRegistering(false)
-    }
-  }
-  
-  const loadMessages = async (pageNum = 1, append = false) => {
-    setIsLoadingMessages(true)
-    try {
-      const response = await fetch(`/api/community/messages?page=${pageNum}&limit=20`)
-      const data = await response.json()
-      
-      if (data.success) {
-        if (append) {
-          setMessages(prev => [...data.messages, ...prev])
-        } else {
-          setMessages(data.messages)
-        }
-        setHasMore(data.pagination.hasMore)
-        setPage(pageNum)
-      }
-    } catch (error) {
-      console.error("Error loading messages:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load messages",
-        variant: "destructive"
-      })
-    } finally {
-      setIsLoadingMessages(false)
-    }
-  }
-  
-  const sendMessage = async () => {
-    if (!user?.id || !newMessage.trim() || !currentUser) return
-    
-    setIsSending(true)
-    try {
-      const response = await fetch('/api/community/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: newMessage.trim(),
-          civicId: user.id
-        }),
-      })
-      
-      const data = await response.json()
-      
-      if (data.success) {
-        setMessages(prev => [...prev, data.message])
-        setNewMessage("")
-        toast({
-          title: "Message sent",
-          description: "Your message has been posted successfully",
-        })
-      } else {
-        toast({
-          title: "Error",
-          description: data.error || "Failed to send message",
-          variant: "destructive"
-        })
-      }
-    } catch (error) {
-      console.error("Error sending message:", error)
-      toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
-        variant: "destructive"
-      })
-    } finally {
-      setIsSending(false)
     }
   }
   
@@ -462,7 +462,7 @@ export default function CommunityPage() {
               )}
               
               <div className="space-y-4 pb-4">
-                {messages.map((message, index) => (
+                {messages.map((message) => (
                   <div key={message._id} className="flex space-x-3">
                     <Avatar className="h-8 w-8 flex-shrink-0">
                       <AvatarFallback className="bg-gray-700 text-gray-300 text-sm">
@@ -535,4 +535,4 @@ export default function CommunityPage() {
       </main>
     </div>
   )
-} 
+}
