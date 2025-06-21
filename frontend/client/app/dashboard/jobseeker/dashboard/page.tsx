@@ -3,6 +3,7 @@
 import type React from "react";
 
 import { useState, useEffect } from "react";
+import { useUser } from "@civic/auth/react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -36,7 +37,12 @@ import {
 } from "lucide-react";
 
 export default function JobSeekerDashboard() {
+  const { user } = useUser();
   const [isInterviewActive, setIsInterviewActive] = useState(false);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [applications, setApplications] = useState<any[]>([]);
+  const [profile, setProfile] = useState<any>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [data, setData] = useState({
     // Personal Information
     firstName: "John",
@@ -77,17 +83,143 @@ export default function JobSeekerDashboard() {
     certifications: ["AWS Solutions Architect", "Google Cloud Professional"],
   });
 
+  // Load jobseeker data from API
   useEffect(() => {
+    const loadJobSeekerData = async () => {
+      // Get civicId from user or localStorage
+      const civicId = user?.username || localStorage.getItem("mockCivicId") || `mock_user_${Date.now()}`;
+      
+      setProfileLoading(true);
+      try {
+        // Load profile
+        const profileRes = await fetch(`/api/jobseeker/profile?civicId=${civicId}`);
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          setProfile(profileData.profile);
+          setApplications(profileData.applications || []);
+          
+          if (profileData.profile) {
+            // Update local state with API data
+            setData({
+              firstName: profileData.profile.first_name || "",
+              lastName: profileData.profile.last_name || "",
+              email: profileData.profile.user?.email || "",
+              phone: profileData.profile.phone || "",
+              city: profileData.profile.city || "",
+              country: profileData.profile.country || "USA",
+              dateOfBirth: profileData.profile.date_of_birth || "",
+              gender: profileData.profile.gender || "",
+              languages: profileData.profile.languages || ["English"],
+              profilePicture: null,
+              currentStatus: profileData.profile.current_status || "",
+              experience: profileData.profile.experience_level || "",
+              education: profileData.profile.education_level || "",
+              university: profileData.profile.university || "",
+              graduationYear: profileData.profile.graduation_year?.toString() || "",
+              skills: profileData.profile.skills || [],
+              resume: null,
+              portfolio: profileData.profile.portfolio_url || "",
+              linkedIn: profileData.profile.linkedin_url || "",
+              github: profileData.profile.github_url || "",
+              interests: profileData.profile.interests || [],
+              careerGoals: profileData.profile.career_goals || [],
+              jobTypes: profileData.profile.job_types || [],
+              workModes: profileData.profile.work_modes || [],
+              salaryExpectation: profileData.profile.salary_expectation || "",
+              availability: profileData.profile.availability || "",
+              relocate: profileData.profile.willing_to_relocate ? "Yes" : "No",
+              bio: profileData.profile.bio || "",
+              achievements: profileData.profile.achievements || [],
+              certifications: profileData.profile.certifications || [],
+            });
+          }
+        }
+
+        // Load recommended jobs
+        const jobsRes = await fetch(`/api/jobs?status=active`);
+        if (jobsRes.ok) {
+          const jobsData = await jobsRes.json();
+          setJobs(jobsData.jobs || []);
+        }
+      } catch (error) {
+        console.error("Error loading jobseeker data:", error);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    // Also check localStorage for any unsaved changes
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("jobseekerProfile");
       if (stored) {
         setData(JSON.parse(stored));
       }
     }
-  }, []);
+
+    loadJobSeekerData();
+  }, [user?.username]);
 
   const startInterview = () => {
     setIsInterviewActive(true);
+  };
+
+  const handleApplyToJob = async (jobId: string) => {
+    const civicId = user?.username || localStorage.getItem("mockCivicId") || `mock_user_${Date.now()}`;
+
+    try {
+      const response = await fetch("/api/jobseeker/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          civicId: civicId,
+          jobPostingId: jobId,
+          coverLetter: "I am interested in this position and believe my skills would be a great fit."
+        }),
+      });
+
+      if (response.ok) {
+        alert("Application submitted successfully!");
+        // Reload applications
+        const appsRes = await fetch(`/api/jobseeker/applications?civicId=${civicId}`);
+        if (appsRes.ok) {
+          const appsData = await appsRes.json();
+          setApplications(appsData.applications || []);
+        }
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || "Failed to submit application");
+      }
+    } catch (error) {
+      console.error("Error applying to job:", error);
+      alert("Failed to submit application");
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    const civicId = user?.username || localStorage.getItem("mockCivicId") || `mock_user_${Date.now()}`;
+
+    try {
+      const response = await fetch("/api/jobseeker/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          civicId: civicId,
+          ...data
+        }),
+      });
+
+      if (response.ok) {
+        alert("Profile updated successfully!");
+        // Save to localStorage as backup
+        localStorage.setItem("jobseekerProfile", JSON.stringify(data));
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || "Failed to update profile");
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert("Failed to update profile");
+    }
   };
 
   const update = (key: string, value: any) =>
@@ -441,7 +573,10 @@ export default function JobSeekerDashboard() {
                       />
                     </div>
 
-                    <Button className="bg-[#111111] hover:bg-[#111111]/80 text-[#f6f6f6] border border-[#ffcb74]">
+                    <Button 
+                      onClick={handleUpdateProfile}
+                      className="bg-[#111111] hover:bg-[#111111]/80 text-[#f6f6f6] border border-[#ffcb74]"
+                    >
                       Update Profile
                     </Button>
                   </CardContent>
@@ -462,38 +597,9 @@ export default function JobSeekerDashboard() {
                 </Card>
 
                 <div className="space-y-4">
-                  {[
-                    {
-                      title: "Senior Frontend Developer",
-                      company: "TechFlow AI",
-                      location: "San Francisco, CA",
-                      salary: "$120K - $160K",
-                      match: "95%",
-                      type: "Full-time",
-                      posted: "2 days ago",
-                      skills: ["React", "TypeScript", "Next.js"],
-                    },
-                    {
-                      title: "Full Stack Engineer",
-                      company: "DataVision",
-                      location: "Remote",
-                      salary: "$100K - $140K",
-                      match: "88%",
-                      type: "Full-time",
-                      posted: "1 week ago",
-                      skills: ["Node.js", "Python", "AWS"],
-                    },
-                    {
-                      title: "Product Manager",
-                      company: "StartupX",
-                      location: "New York, NY",
-                      salary: "$110K - $150K",
-                      match: "82%",
-                      type: "Full-time",
-                      posted: "3 days ago",
-                      skills: ["Product Strategy", "Analytics", "Agile"],
-                    },
-                  ].map((job, index) => (
+                  {jobs.slice(0, 6).map((job, index) => {
+                    const matchScore = Math.floor(Math.random() * 20) + 80; // Mock match calculation
+                    return (
                     <Card
                       key={index}
                       className="bg-[#111111]/80 border-[#ffcb74]/20 hover:border-[#ffcb74]/50 transition-all duration-300 hover:shadow-lg"
@@ -505,7 +611,7 @@ export default function JobSeekerDashboard() {
                               {job.title}
                             </h3>
                             <p className="text-[#ffcb74] font-medium mb-2">
-                              {job.company}
+                              {job.company?.name}
                             </p>
                             <div className="flex items-center space-x-4 text-sm text-[#f6f6f6]/70 mb-3">
                               <div className="flex items-center">
@@ -514,15 +620,15 @@ export default function JobSeekerDashboard() {
                               </div>
                               <div className="flex items-center">
                                 <DollarSign className="h-4 w-4 mr-1" />
-                                {job.salary}
+                                {job.salary_range}
                               </div>
                               <div className="flex items-center">
                                 <Clock className="h-4 w-4 mr-1" />
-                                {job.posted}
+                                {new Date(job.created_at).toLocaleDateString()}
                               </div>
                             </div>
                             <div className="flex flex-wrap gap-2 mb-3">
-                              {job.skills.map((skill, skillIndex) => (
+                              {job.skills_required?.slice(0, 3).map((skill: string, skillIndex: number) => (
                                 <Badge
                                   key={skillIndex}
                                   className="bg-[#ffcb74]/20 text-[#ffcb74] hover:bg-[#ffcb74]/30 text-xs"
@@ -534,19 +640,23 @@ export default function JobSeekerDashboard() {
                           </div>
                           <div className="text-right">
                             <div className="text-2xl font-bold text-[#ffcb74] mb-1">
-                              {job.match}
+                              {matchScore}%
                             </div>
                             <div className="text-xs text-[#f6f6f6]/50 mb-3">
                               Match
                             </div>
-                            <Button className="bg-[#ffcb74] hover:bg-[#ffcb74]/80 text-[#111111] font-semibold">
+                            <Button 
+                              onClick={() => handleApplyToJob(job.id)}
+                              className="bg-[#ffcb74] hover:bg-[#ffcb74]/80 text-[#111111] font-semibold"
+                            >
                               Apply Now
                             </Button>
                           </div>
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
               </TabsContent>
 
@@ -716,51 +826,49 @@ export default function JobSeekerDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {[
-                        {
-                          company: "TechFlow AI",
-                          position: "Senior Frontend Developer",
-                          status: "Interview Scheduled",
-                          date: "Applied 5 days ago",
-                          statusColor: "bg-[#ffcb74]/20 text-[#ffcb74]",
-                        },
-                        {
-                          company: "DataVision",
-                          position: "Full Stack Engineer",
-                          status: "Under Review",
-                          date: "Applied 1 week ago",
-                          statusColor: "bg-yellow-500/20 text-yellow-400",
-                        },
-                        {
-                          company: "StartupX",
-                          position: "Product Manager",
-                          status: "Applied",
-                          date: "Applied 2 days ago",
-                          statusColor: "bg-[#f6f6f6]/20 text-[#f6f6f6]/70",
-                        },
-                      ].map((app, index) => (
+                      {applications.slice(0, 10).map((app, index) => {
+                        const getStatusColor = (status: string) => {
+                          switch (status.toLowerCase()) {
+                            case 'interview':
+                            case 'interview_scheduled':
+                              return "bg-[#ffcb74]/20 text-[#ffcb74]";
+                            case 'under_review':
+                            case 'reviewing':
+                              return "bg-yellow-500/20 text-yellow-400";
+                            case 'accepted':
+                            case 'hired':
+                              return "bg-green-500/20 text-green-400";
+                            case 'rejected':
+                              return "bg-red-500/20 text-red-400";
+                            default:
+                              return "bg-[#f6f6f6]/20 text-[#f6f6f6]/70";
+                          }
+                        };
+                        
+                        return (
                         <div
                           key={index}
                           className="flex items-center justify-between p-4 border border-[#ffcb74]/20 rounded-lg bg-[#2f2f2f]"
                         >
                           <div>
                             <h4 className="font-semibold text-[#f6f6f6]">
-                              {app.position}
+                              {app.job_posting?.title}
                             </h4>
                             <p className="text-sm text-[#ffcb74] mb-1">
-                              {app.company}
+                              {app.job_posting?.company?.name}
                             </p>
                             <p className="text-xs text-[#f6f6f6]/50">
-                              {app.date}
+                              Applied {new Date(app.applied_at).toLocaleDateString()}
                             </p>
                           </div>
                           <div className="text-right">
-                            <Badge className={`${app.statusColor} text-xs`}>
-                              {app.status}
+                            <Badge className={`${getStatusColor(app.status)} text-xs`}>
+                              {app.status.replace('_', ' ').toUpperCase()}
                             </Badge>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>

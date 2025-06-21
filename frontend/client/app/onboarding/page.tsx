@@ -67,8 +67,10 @@ export default function OnboardingPage() {
         setUser(data.user)
 
         // If user is already onboarded, redirect to their dashboard
-        if (data.user.onboarded && data.user.role) {
-          router.push(`/dashboard/${data.user.role}`)
+        if (data.user.onboarded && data.user.active_roles && data.user.active_roles.length > 0) {
+          // Redirect to the first active role's dashboard
+          const primaryRole = data.user.active_roles[0]
+          router.push(`/dashboard/${primaryRole}`)
         }
       } else if (response.status === 404) {
         // User not found in database, that's ok - they can still select a role

@@ -75,8 +75,10 @@ export async function GET(request: NextRequest) {
           .eq('civic_id', userData.id)
         
         // Redirect based on onboarding status
-        if (existingUser.onboarded && existingUser.role) {
-          return NextResponse.redirect(new URL(`/dashboard/${existingUser.role}`, request.url))
+        if (existingUser.onboarded && existingUser.active_roles && existingUser.active_roles.length > 0) {
+          // Redirect to the first active role's dashboard
+          const primaryRole = existingUser.active_roles[0]
+          return NextResponse.redirect(new URL(`/dashboard/${primaryRole}`, request.url))
         } else {
           return NextResponse.redirect(new URL('/onboarding', request.url))
         }

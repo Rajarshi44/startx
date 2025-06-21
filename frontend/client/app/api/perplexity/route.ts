@@ -3,7 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 
 export async function POST(req: NextRequest) {
-  const { idea, userId } = await req.json();
+  const { idea, civicId, companyId } = await req.json();
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: 'Missing Perplexity API key' }, { status: 500 });
@@ -13,16 +13,30 @@ export async function POST(req: NextRequest) {
   const cookieStore = cookies();
   const supabase = await createClient(cookieStore);
 
+  // Get user ID if civicId provided
+  let userId = null;
+  if (civicId) {
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('civic_id', civicId)
+      .single();
+    
+    if (user) {
+      userId = user.id;
+    }
+  }
+
   // 1. Check for existing validation
   if (userId) {
     const { data: existing, error: fetchError } = await supabase
       .from('idea_validations')
       .select('*')
       .eq('user_id', userId)
-      .eq('idea', idea)
+      .eq('idea_text', idea)
       .single();
-    if (existing && existing.result) {
-      return NextResponse.json(existing.result, { status: 200 });
+    if (existing && existing.validation_result) {
+      return NextResponse.json(JSON.parse(existing.validation_result), { status: 200 });
     }
   }
 
@@ -51,10 +65,27 @@ export async function POST(req: NextRequest) {
 
     const data = await perplexityRes.json();
 
+    // Extract score from the content if available
+    let score = null;
+    if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+      const content = data.choices[0].message.content;
+      const scoreMatch = content.match(/score[:\s]*(\d+(?:\.\d+)?)/i);
+      if (scoreMatch) {
+        score = parseFloat(scoreMatch[1]);
+      }
+    }
+
     // 2. Store the result
     if (userId) {
       await supabase.from('idea_validations').insert([
-        { user_id: userId, idea, result: data }
+        { 
+          user_id: userId, 
+          company_id: companyId || null,
+          idea_text: idea, 
+          validation_result: JSON.stringify(data),
+          score: score,
+          perplexity_response: data
+        }
       ]);
     }
 

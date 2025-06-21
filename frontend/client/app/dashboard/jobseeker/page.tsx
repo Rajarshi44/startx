@@ -3,6 +3,7 @@
 import type React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@civic/auth/react";
 import {
   Camera,
   Upload,
@@ -213,6 +214,7 @@ export default function JobSeekerOnboarding() {
   const workModeOptions = ["Remote", "On-site", "Hybrid"];
 
   const router = useRouter();
+  const { user } = useUser();
 
   const update = <K extends keyof JobSeekerData>(
     key: K,
@@ -862,13 +864,58 @@ export default function JobSeekerOnboarding() {
     </div>
   );
 
-  const handleSubmit = () => {
-    console.log("Profile Data:", data);
-    alert("🎉 Profile created successfully! Welcome to the platform!");
-    // Save data to localStorage
-    localStorage.setItem("jobseekerProfile", JSON.stringify(data));
-    // Redirect to dashboard
-    router.push("/dashboard/jobseeker/dashboard");
+  const handleSubmit = async () => {
+    // Generate a mock civicId if not signed in
+    const civicId = user?.username || `mock_user_${Date.now()}`;
+
+    try {
+      // First update user role
+      const roleRes = await fetch("/api/user/update-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          civicId: civicId,
+          role: "jobseeker",
+          email: data.email,
+          name: `${data.firstName} ${data.lastName}`
+        }),
+      });
+
+      if (!roleRes.ok) {
+        const roleData = await roleRes.json();
+        alert(roleData.error || "Failed to update role");
+        return;
+      }
+
+      // Then create jobseeker profile
+      const profileRes = await fetch("/api/jobseeker/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          civicId: civicId,
+          ...data
+        }),
+      });
+
+      if (!profileRes.ok) {
+        const profileData = await profileRes.json();
+        alert(profileData.error || "Failed to create profile");
+        return;
+      }
+
+      console.log("Profile Data:", data);
+      alert("🎉 Profile created successfully! Welcome to the platform!");
+      
+      // Save data to localStorage as backup
+      localStorage.setItem("jobseekerProfile", JSON.stringify(data));
+      localStorage.setItem("mockCivicId", civicId);
+      
+      // Redirect to dashboard
+      router.push("/dashboard/jobseeker/dashboard");
+    } catch (error) {
+      console.error("Error creating profile:", error);
+      alert("Failed to create profile. Please try again.");
+    }
   };
 
   return (

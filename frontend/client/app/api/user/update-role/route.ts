@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
           civic_id: civicId,
           email: email,
           name: name,
-          role: role,
+          active_roles: [role], // Store role in active_roles array
           onboarded: true,
         })
         .select()
@@ -57,13 +57,18 @@ export async function POST(request: NextRequest) {
       }
       userData = newUser
     } else {
-      // Update existing user
+      // Update existing user - add role to active_roles if not already present
+      let updatedActiveRoles = existingUser.active_roles || []
+      if (!updatedActiveRoles.includes(role)) {
+        updatedActiveRoles.push(role)
+      }
+
       const { data: updatedUser, error: updateError } = await supabase
         .from('users')
         .update({
           email: email,
           name: name,
-          role: role,
+          active_roles: updatedActiveRoles,
           onboarded: true,
           updated_at: new Date().toISOString(),
         })
