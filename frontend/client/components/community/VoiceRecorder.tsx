@@ -1,148 +1,153 @@
-"use client"
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Mic, MicOff, Play, Pause, Square, Trash2, Send } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import React, { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Mic, Play, Pause, Square, Trash2, Send } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface VoiceRecorderProps {
-  onRecordingComplete: (audioBlob: Blob) => void
-  onCancel: () => void
-  isUploading?: boolean
+  onRecordingComplete: (audioBlob: Blob) => void;
+  onCancel: () => void;
+  isUploading?: boolean;
 }
 
-export function VoiceRecorder({ onRecordingComplete, onCancel, isUploading = false }: VoiceRecorderProps) {
-  const [isRecording, setIsRecording] = useState(false)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [recordingTime, setRecordingTime] = useState(0)
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
-  const [audioUrl, setAudioUrl] = useState<string | null>(null)
-  
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
-  const chunksRef = useRef<Blob[]>([])
-  
-  const { toast } = useToast()
+export function VoiceRecorder({
+  onRecordingComplete,
+  onCancel,
+  isUploading = false,
+}: VoiceRecorderProps) {
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  const { toast } = useToast();
 
   useEffect(() => {
     return () => {
       if (timerRef.current) {
-        clearInterval(timerRef.current)
+        clearInterval(timerRef.current);
       }
       if (audioUrl) {
-        URL.revokeObjectURL(audioUrl)
+        URL.revokeObjectURL(audioUrl);
       }
-    }
-  }, [audioUrl])
+    };
+  }, [audioUrl]);
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          sampleRate: 44100
-        } 
-      })
-      
+          sampleRate: 44100,
+        },
+      });
+
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      })
-      
-      mediaRecorderRef.current = mediaRecorder
-      chunksRef.current = []
-      
+        mimeType: "audio/webm;codecs=opus",
+      });
+
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          chunksRef.current.push(event.data)
+          chunksRef.current.push(event.data);
         }
-      }
-      
+      };
+
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
-        setAudioBlob(blob)
-        const url = URL.createObjectURL(blob)
-        setAudioUrl(url)
-        
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        setAudioBlob(blob);
+        const url = URL.createObjectURL(blob);
+        setAudioUrl(url);
+
         // Stop all tracks to release microphone
-        stream.getTracks().forEach(track => track.stop())
-      }
-      
-      mediaRecorder.start()
-      setIsRecording(true)
-      setRecordingTime(0)
-      
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+
       // Start timer
       timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1)
-      }, 1000)
-      
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
     } catch (error) {
-      console.error('Error starting recording:', error)
+      console.error("Error starting recording:", error);
       toast({
         title: "Recording Error",
         description: "Could not access microphone. Please check permissions.",
-        variant: "destructive"
-      })
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop()
-      setIsRecording(false)
-      
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+
       if (timerRef.current) {
-        clearInterval(timerRef.current)
-        timerRef.current = null
+        clearInterval(timerRef.current);
+        timerRef.current = null;
       }
     }
-  }
+  };
 
   const playRecording = () => {
     if (audioUrl && audioRef.current) {
-      audioRef.current.play()
-      setIsPlaying(true)
+      audioRef.current.play();
+      setIsPlaying(true);
     }
-  }
+  };
 
   const pauseRecording = () => {
     if (audioRef.current) {
-      audioRef.current.pause()
-      setIsPlaying(false)
+      audioRef.current.pause();
+      setIsPlaying(false);
     }
-  }
+  };
 
   const deleteRecording = () => {
     if (audioUrl) {
-      URL.revokeObjectURL(audioUrl)
+      URL.revokeObjectURL(audioUrl);
     }
-    setAudioBlob(null)
-    setAudioUrl(null)
-    setRecordingTime(0)
-    setIsPlaying(false)
-  }
+    setAudioBlob(null);
+    setAudioUrl(null);
+    setRecordingTime(0);
+    setIsPlaying(false);
+  };
 
   const sendRecording = () => {
     if (audioBlob) {
-      onRecordingComplete(audioBlob)
+      onRecordingComplete(audioBlob);
     }
-  }
+  };
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   return (
-    <Card className="border backdrop-blur-sm"
-          style={{
-            borderColor: "rgba(255, 203, 116, 0.2)",
-            backgroundColor: "rgba(255, 255, 255, 0.05)",
-          }}>
+    <Card
+      className="border backdrop-blur-sm"
+      style={{
+        borderColor: "rgba(255, 203, 116, 0.2)",
+        backgroundColor: "rgba(255, 255, 255, 0.05)",
+      }}
+    >
       <CardContent className="p-4">
         <div className="flex flex-col space-y-4">
           {/* Recording Status */}
@@ -156,7 +161,11 @@ export function VoiceRecorder({ onRecordingComplete, onCancel, isUploading = fal
               </span>
             </div>
             <p className="text-sm text-gray-400">
-              {isRecording ? "Recording..." : audioBlob ? "Recording ready" : "Press mic to start recording"}
+              {isRecording
+                ? "Recording..."
+                : audioBlob
+                ? "Recording ready"
+                : "Press mic to start recording"}
             </p>
           </div>
 
@@ -168,7 +177,7 @@ export function VoiceRecorder({ onRecordingComplete, onCancel, isUploading = fal
               onEnded={() => setIsPlaying(false)}
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
-              style={{ display: 'none' }}
+              style={{ display: "none" }}
             />
           )}
 
@@ -203,7 +212,11 @@ export function VoiceRecorder({ onRecordingComplete, onCancel, isUploading = fal
                   variant="outline"
                   className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800"
                 >
-                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  {isPlaying ? (
+                    <Pause className="h-4 w-4" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
                 </Button>
 
                 <Button
@@ -246,5 +259,5 @@ export function VoiceRecorder({ onRecordingComplete, onCancel, isUploading = fal
         </div>
       </CardContent>
     </Card>
-  )
-} 
+  );
+}
