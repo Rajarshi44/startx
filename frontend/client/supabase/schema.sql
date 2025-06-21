@@ -282,8 +282,9 @@ CREATE TABLE IF NOT EXISTS job_applications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   jobseeker_id UUID REFERENCES users(id) ON DELETE CASCADE,
   job_posting_id UUID REFERENCES job_postings(id) ON DELETE CASCADE,
-  status TEXT CHECK (status IN ('applied', 'reviewing', 'interview', 'offer', 'hired', 'rejected')) DEFAULT 'applied',
+  status TEXT CHECK (status IN ('applied', 'interview', 'accepted', 'rejected', 'waitlist')) DEFAULT 'applied',
   cover_letter TEXT,
+  notes TEXT, -- Company notes about the application
   applied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(jobseeker_id, job_posting_id)

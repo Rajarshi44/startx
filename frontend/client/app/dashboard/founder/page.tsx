@@ -19,6 +19,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { Tabs as ShadTabs, TabsList as ShadTabsList, TabsTrigger as ShadTabsTrigger, TabsContent as ShadTabsContent } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import Link from "next/link"
 
 export default function FounderDashboard() {
   const { user, isLoading: authLoading } = useUser()
@@ -1433,8 +1434,9 @@ export default function FounderDashboard() {
                                         size="sm"
                                         variant="outline"
                                         className="text-xs h-7 px-3 border-blue-500/30 text-blue-400 hover:bg-blue-500/10 font-light"
+                                        asChild
                                       >
-                                        View Applications
+                                        <Link href="/company/applications">View Applications</Link>
                                       </Button>
                                     </div>
                                   </div>
