@@ -194,7 +194,6 @@ export async function GET(request: NextRequest) {
     const conversation = await tavusClient.getConversation(conversationId)
 
     // Update local session status
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { data: session, error: sessionError } = await supabase
       .from("interview_sessions")
       .select("*")

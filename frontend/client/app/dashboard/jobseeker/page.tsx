@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable prefer-const */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/*eslint-disable*/
 "use client";
 
 import type React from "react";
@@ -936,6 +935,7 @@ export default function JobSeekerOnboarding() {
       const res = await axios.post("/api/gemini-extract", form, { headers: { "Content-Type": "multipart/form-data" } });
       const extracted = res.data;
       // Map Gemini fields to our state
+      // eslint-disable-next-line prefer-const
       let newData = { ...data };
       Object.entries(geminiToStateMap).forEach(([geminiKey, stateKey]) => {
         if (extracted[geminiKey] && (!data[stateKey] || data[stateKey] === "" || (Array.isArray(data[stateKey]) && (data[stateKey] as any[]).length === 0))) {

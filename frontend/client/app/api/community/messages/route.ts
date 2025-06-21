@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { MongoClient, ObjectId } from "mongodb";
+import { MongoClient } from "mongodb";
 
 const uri = "mongodb+srv://rishi404:giXEpvLDXFg8Jwzd@cluster0.6nhngod.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const dbName = "resumeUploads";
@@ -12,7 +12,6 @@ export async function GET(req: NextRequest) {
     await client.connect();
     const db = client.db(dbName);
     const messagesCollection = db.collection("communityMessages");
-    const usersCollection = db.collection("communityUsers");
     
     // Get query parameters for pagination
     const url = new URL(req.url);
@@ -97,10 +96,9 @@ export async function POST(req: NextRequest) {
     await client.connect();
     const db = client.db(dbName);
     const messagesCollection = db.collection("communityMessages");
-    const usersCollection = db.collection("communityUsers");
     
     // Find the user by civicId
-    const user = await usersCollection.findOne({ civicId });
+    const user = await db.collection("communityUsers").findOne({ civicId });
     
     if (!user) {
       return NextResponse.json({ error: "User not found. Please register first." }, { status: 404 });
@@ -162,4 +160,4 @@ export async function POST(req: NextRequest) {
   } finally {
     await client.close();
   }
-} 
+}

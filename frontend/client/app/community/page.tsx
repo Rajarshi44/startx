@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useUser } from "@civic/auth-web3/react"
 import { useAccount } from 'wagmi'
 import { Button } from "@/components/ui/button"
@@ -15,7 +15,6 @@ import {
   Users, 
   MessageCircle, 
   Send, 
-  Shield, 
   User, 
   ArrowLeft,
   AlertCircle,
@@ -97,7 +96,7 @@ export default function CommunityPage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === 'Enter' && !isSending && !showVoiceRecorder) {
+      if (e.ctrlKey && e.key === 'Enter' && newMessage.trim() && !isSending) {
         e.preventDefault()
         sendMessage()
       }
@@ -105,16 +104,7 @@ export default function CommunityPage() {
     
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [newMessage, isSending, showVoiceRecorder])
-  
-  // Cleanup image preview on unmount
-  useEffect(() => {
-    return () => {
-      if (imagePreview) {
-        URL.revokeObjectURL(imagePreview)
-      }
-    }
-  }, [imagePreview])
+  }, [newMessage, isSending])
   
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -144,8 +134,84 @@ export default function CommunityPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user, loadMessages, toast])
+
+  // Check if user is authenticated
+  useEffect(() => {
+    if (!user?.id) {
+      setIsLoading(false)
+      return
+    }
+    
+    checkUserRegistration()
+  }, [user, checkUserRegistration])
   
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  const sendMessage = useCallback(async () => {
+    if (!user?.id || !newMessage.trim() || !currentUser) return
+    
+    setIsSending(true)
+    try {
+      const response = await fetch('/api/community/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: newMessage.trim(),
+          civicId: user.id
+        }),
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setMessages(prev => [...prev, data.message])
+        setNewMessage("")
+        toast({
+          title: "Message sent",
+          description: "Your message has been posted.",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: data.error || "Failed to send message",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error("Error sending message:", error)
+      toast({
+        title: "Error",
+        description: "Failed to send message",
+        variant: "destructive"
+      })
+    } finally {
+      setIsSending(false)
+    }
+  }, [user, newMessage, currentUser, toast])
+  
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'Enter' && newMessage.trim() && !isSending) {
+        e.preventDefault()
+        sendMessage()
+      }
+    }
+    
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [newMessage, isSending, sendMessage])
+  
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
   const registerUser = async () => {
     if (!user?.id || !username.trim()) return
     
@@ -220,50 +286,8 @@ export default function CommunityPage() {
     }
   }
   
-  const uploadMedia = async (file: File | Blob, type: 'image' | 'audio'): Promise<MediaAttachment | null> => {
-    if (!user?.id) return null
-    
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('type', type)
-    formData.append('civicId', user.id)
-    
-    try {
-      const response = await fetch('/api/community/upload', {
-        method: 'POST',
-        body: formData,
-      })
-      
-      const data = await response.json()
-      
-      if (data.success) {
-        return {
-          type: data.data.type,
-          url: data.data.secure_url,
-          publicId: data.data.public_id,
-          format: data.data.format,
-          bytes: data.data.bytes,
-          width: data.data.width,
-          height: data.data.height,
-          duration: data.data.duration
-        }
-      } else {
-        throw new Error(data.error || 'Upload failed')
-      }
-    } catch (error) {
-      console.error('Upload error:', error)
-      toast({
-        title: "Upload Failed",
-        description: error instanceof Error ? error.message : "Failed to upload media",
-        variant: "destructive"
-      })
-      return null
-    }
-  }
-
-  const sendMessage = async (mediaAttachment?: MediaAttachment) => {
-    if (!user?.id || !currentUser) return
-    if (!newMessage.trim() && !mediaAttachment) return
+  const sendMessage = async () => {
+    if (!user?.id || !newMessage.trim() || !currentUser) return
     
     setIsSending(true)
     try {
@@ -274,8 +298,7 @@ export default function CommunityPage() {
         },
         body: JSON.stringify({
           message: newMessage.trim(),
-          civicId: user.id,
-          media: mediaAttachment
+          civicId: user.id
         }),
       })
       
@@ -284,10 +307,9 @@ export default function CommunityPage() {
       if (data.success) {
         setMessages(prev => [...prev, data.message])
         setNewMessage("")
-        clearMediaSelection()
         toast({
           title: "Message sent",
-          description: mediaAttachment ? "Your message with media has been posted successfully" : "Your message has been posted successfully",
+          description: "Your message has been posted successfully",
         })
       } else {
         toast({
@@ -305,79 +327,6 @@ export default function CommunityPage() {
       })
     } finally {
       setIsSending(false)
-    }
-  }
-
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
-    if (!allowedTypes.includes(file.type)) {
-      toast({
-        title: "Invalid File Type",
-        description: "Only JPEG, PNG, GIF, and WebP images are allowed",
-        variant: "destructive"
-      })
-      return
-    }
-
-    // Validate file size (10MB)
-    const maxSize = 10 * 1024 * 1024
-    if (file.size > maxSize) {
-      toast({
-        title: "File Too Large",
-        description: "Image size must be less than 10MB",
-        variant: "destructive"
-      })
-      return
-    }
-
-    setSelectedImage(file)
-    const preview = URL.createObjectURL(file)
-    setImagePreview(preview)
-  }
-
-  const handleImageUploadAndSend = async () => {
-    if (!selectedImage) return
-    
-    setIsUploadingMedia(true)
-    try {
-      const mediaAttachment = await uploadMedia(selectedImage, 'image')
-      if (mediaAttachment) {
-        await sendMessage(mediaAttachment)
-      }
-    } catch (error) {
-      console.error('Error uploading image:', error)
-    } finally {
-      setIsUploadingMedia(false)
-    }
-  }
-
-  const handleVoiceRecordingComplete = async (audioBlob: Blob) => {
-    setIsUploadingMedia(true)
-    try {
-      const mediaAttachment = await uploadMedia(audioBlob, 'audio')
-      if (mediaAttachment) {
-        await sendMessage(mediaAttachment)
-      }
-    } catch (error) {
-      console.error('Error uploading voice message:', error)
-    } finally {
-      setIsUploadingMedia(false)
-      setShowVoiceRecorder(false)
-    }
-  }
-
-  const clearMediaSelection = () => {
-    setSelectedImage(null)
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview)
-      setImagePreview(null)
-    }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
     }
   }
   
@@ -603,7 +552,7 @@ export default function CommunityPage() {
               )}
               
               <div className="space-y-4 pb-4">
-                {messages.map((message, index) => (
+                {messages.map((message) => (
                   <div key={message._id} className="flex space-x-3">
                     <Avatar className="h-8 w-8 flex-shrink-0">
                       <AvatarFallback className="bg-gray-700 text-gray-300 text-sm">
@@ -787,4 +736,4 @@ export default function CommunityPage() {
       </main>
     </div>
   )
-} 
+}
