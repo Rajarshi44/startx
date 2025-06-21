@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable prefer-const */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import type React from "react";
@@ -22,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import axios from "axios";
 
 export default function JobSeekerOnboarding() {
   type JobSeekerData = {
@@ -97,6 +101,11 @@ export default function JobSeekerOnboarding() {
     achievements: [],
     certifications: [],
   });
+  const [parsing, setParsing] = useState(false);
+  const [parseError, setParseError] = useState("");
+  const [fieldsToFill, setFieldsToFill] = useState<string[]>([]);
+  const [autoFilled, setAutoFilled] = useState(false);
+  const [pdfStep, setPdfStep] = useState(true);
 
   const languages = [
     "English",
@@ -650,13 +659,25 @@ export default function JobSeekerOnboarding() {
             </label>
             <FileUpload
               file={data.resume}
-              onUpload={(file) => update("resume", file)}
-              onRemove={() => update("resume", null)}
+              onUpload={(file) => { update("resume", file); setAutoFilled(false); setFieldsToFill([]); }}
+              onRemove={() => { update("resume", null); setAutoFilled(false); setFieldsToFill([]); }}
               accept=".pdf,.doc,.docx"
               icon={FileText}
               title="Upload your resume"
               description="PDF, DOC, DOCX • Max 5MB"
             />
+            {data.resume && (
+              <div className="mt-2 flex gap-2 items-center">
+                <Button onClick={handleParseResume} disabled={parsing} className="bg-[#ffcb74] text-[#111111] font-bold">
+                  {parsing ? "Parsing..." : "Parse Resume with Gemini"}
+                </Button>
+                {autoFilled && <span className="text-green-400 text-sm">Fields auto-filled!</span>}
+                {parseError && <span className="text-red-400 text-sm">{parseError}</span>}
+              </div>
+            )}
+            {fieldsToFill.length > 0 && (
+              <div className="mt-2 text-yellow-400 text-sm">Missing fields: {fieldsToFill.join(", ")}</div>
+            )}
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -864,12 +885,78 @@ export default function JobSeekerOnboarding() {
     </div>
   );
 
-  const handleSubmit = async () => {
-    // Generate a mock civicId if not signed in
-    const civicId = user?.username || `mock_user_${Date.now()}`;
+  // Helper: map Gemini fields to our state keys
+  const geminiToStateMap: Record<string, keyof JobSeekerData> = {
+    first_name: "firstName",
+    last_name: "lastName",
+    email: "email",
+    phone: "phone",
+    city: "city",
+    country: "country",
+    date_of_birth: "dateOfBirth",
+    gender: "gender",
+    languages: "languages",
+    profile_picture_url: "profilePicture",
+    current_status: "currentStatus",
+    experience_level: "experience",
+    education_level: "education",
+    university: "university",
+    graduation_year: "graduationYear",
+    skills: "skills",
+    resume_url: "resume",
+    portfolio_url: "portfolio",
+    linkedin_url: "linkedIn",
+    github_url: "github",
+    interests: "interests",
+    career_goals: "careerGoals",
+    job_types: "jobTypes",
+    work_modes: "workModes",
+    salary_expectation: "salaryExpectation",
+    availability: "availability",
+    willing_to_relocate: "relocate",
+    bio: "bio",
+    achievements: "achievements",
+    certifications: "certifications",
+  };
 
+  // List of required fields for jobseeker_profiles
+  const requiredFields: (keyof JobSeekerData)[] = [
+    "firstName", "lastName", "email", "phone", "city", "country", "dateOfBirth", "gender", "languages", "currentStatus", "experience", "education", "university", "graduationYear", "skills", "resume", "portfolio", "linkedIn", "github", "interests", "careerGoals", "jobTypes", "workModes", "salaryExpectation", "availability", "relocate", "bio", "achievements", "certifications"
+  ];
+
+  // Resume parsing handler
+  const handleParseResume = async () => {
+    if (!data.resume) return;
+    setParsing(true);
+    setParseError("");
     try {
-      // First update user role
+      const form = new FormData();
+      form.append("file", data.resume);
+      const res = await axios.post("/api/gemini-extract", form, { headers: { "Content-Type": "multipart/form-data" } });
+      const extracted = res.data;
+      // Map Gemini fields to our state
+      let newData = { ...data };
+      Object.entries(geminiToStateMap).forEach(([geminiKey, stateKey]) => {
+        if (extracted[geminiKey] && (!data[stateKey] || data[stateKey] === "" || (Array.isArray(data[stateKey]) && (data[stateKey] as any[]).length === 0))) {
+          newData[stateKey] = extracted[geminiKey];
+        }
+      });
+      setData(newData);
+      setAutoFilled(true);
+      // Find missing fields
+      const missing = requiredFields.filter((f) => !newData[f] || (Array.isArray(newData[f]) && (newData[f] as any[]).length === 0));
+      setFieldsToFill(missing);
+    } catch (e: any) {
+      setParseError("Failed to parse resume. Please try again or fill manually.");
+    } finally {
+      setParsing(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    const civicId = user?.username || `mock_user_${Date.now()}`;
+    try {
+      // Update user role
       const roleRes = await fetch("/api/user/update-role", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -880,14 +967,12 @@ export default function JobSeekerOnboarding() {
           name: `${data.firstName} ${data.lastName}`
         }),
       });
-
       if (!roleRes.ok) {
         const roleData = await roleRes.json();
         alert(roleData.error || "Failed to update role");
         return;
       }
-
-      // Then create jobseeker profile
+      // Create jobseeker profile in Supabase
       const profileRes = await fetch("/api/jobseeker/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -896,27 +981,82 @@ export default function JobSeekerOnboarding() {
           ...data
         }),
       });
-
       if (!profileRes.ok) {
         const profileData = await profileRes.json();
         alert(profileData.error || "Failed to create profile");
         return;
       }
-
-      console.log("Profile Data:", data);
+      // Upload resume to MongoDB
+      if (data.resume) {
+        const form = new FormData();
+        form.append("file", data.resume);
+        form.append("civicId", civicId);
+        await fetch("/api/upload-mongo", {
+          method: "POST",
+          body: form
+        });
+      }
       alert("🎉 Profile created successfully! Welcome to the platform!");
-      
-      // Save data to localStorage as backup
       localStorage.setItem("jobseekerProfile", JSON.stringify(data));
       localStorage.setItem("mockCivicId", civicId);
-      
-      // Redirect to dashboard
       router.push("/dashboard/jobseeker/dashboard");
     } catch (error) {
       console.error("Error creating profile:", error);
       alert("Failed to create profile. Please try again.");
     }
   };
+
+  // PDF Upload Step
+  const PdfUploadStep = () => (
+    <div className="flex flex-col items-center justify-center min-h-[60vh]">
+      <FormSection
+        title="Upload Your Resume (PDF)"
+        description="Start by uploading your resume in PDF format. We'll extract your details automatically."
+      >
+        <div className="max-w-md mx-auto">
+          <FileUpload
+            file={data.resume}
+            onUpload={(file) => update("resume", file)}
+            onRemove={() => update("resume", null)}
+            accept=".pdf"
+            icon={FileText}
+            title="Upload your resume"
+            description="PDF only • Max 5MB"
+          />
+          {data.resume && (
+            <div className="mt-4 flex flex-col items-center gap-2">
+              <Button onClick={async () => {
+                setParsing(true);
+                setParseError("");
+                try {
+                  const form = new FormData();
+                  form.append("file", data.resume!);
+                  const res = await axios.post("/api/gemini-extract", form, { headers: { "Content-Type": "multipart/form-data" } });
+                  const extracted = res.data;
+                  let newData = { ...data };
+                  Object.entries(geminiToStateMap).forEach(([geminiKey, stateKey]) => {
+                    if (extracted[geminiKey]) {
+                      newData[stateKey] = extracted[geminiKey];
+                    }
+                  });
+                  setData(newData);
+                  setAutoFilled(true);
+                  setPdfStep(false);
+                } catch (e) {
+                  setParseError("Failed to parse resume. Please try again or fill manually.");
+                } finally {
+                  setParsing(false);
+                }
+              }} disabled={parsing} className="bg-[#ffcb74] text-[#111111] font-bold w-full">
+                {parsing ? "Parsing..." : "Parse Resume"}
+              </Button>
+              {parseError && <span className="text-red-400 text-sm">{parseError}</span>}
+            </div>
+          )}
+        </div>
+      </FormSection>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#2f2f2f]">
@@ -934,44 +1074,47 @@ export default function JobSeekerOnboarding() {
           <ProgressBar />
         </div>
 
-        <StepHeader />
-
-        {/* Step Content */}
-        {step === 1 && <Step1 />}
-        {step === 2 && <Step2 />}
-        {step === 3 && <Step3 />}
-        {step === 4 && <Step4 />}
-
-        {/* Navigation */}
-        <div className="flex justify-between items-center mt-12 pt-8">
-          <Button
-            onClick={() => setStep(step - 1)}
-            disabled={step === 1}
-            variant="outline"
-            className="bg-[#111111] text-[#f6f6f6] border-[#ffcb74] hover:bg-[#ffcb74] hover:text-[#111111] disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ChevronLeft className="w-4 h-4 mr-2" />
-            Previous
-          </Button>
-
-          {step < 4 ? (
-            <Button
-              onClick={() => setStep(step + 1)}
-              className="bg-[#111111] hover:bg-[#111111]/80 text-[#f6f6f6] border border-[#ffcb74]"
-            >
-              Continue
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
-          ) : (
-            <Button
-              onClick={handleSubmit}
-              className="bg-[#ffcb74] hover:bg-[#ffcb74]/80 text-[#111111] font-bold"
-            >
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Create Profile
-            </Button>
-          )}
-        </div>
+        {pdfStep ? (
+          <PdfUploadStep />
+        ) : (
+          <>
+            <StepHeader />
+            {/* Step Content */}
+            {step === 1 && <Step1 />}
+            {step === 2 && <Step2 />}
+            {step === 3 && <Step3 />}
+            {step === 4 && <Step4 />}
+            {/* Navigation */}
+            <div className="flex justify-between items-center mt-12 pt-8">
+              <Button
+                onClick={() => setStep(step - 1)}
+                disabled={step === 1}
+                variant="outline"
+                className="bg-[#111111] text-[#f6f6f6] border-[#ffcb74] hover:bg-[#ffcb74] hover:text-[#111111] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Previous
+              </Button>
+              {step < 4 ? (
+                <Button
+                  onClick={() => setStep(step + 1)}
+                  className="bg-[#111111] hover:bg-[#111111]/80 text-[#f6f6f6] border border-[#ffcb74]"
+                >
+                  Continue
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleSubmit}
+                  className="bg-[#ffcb74] hover:bg-[#ffcb74]/80 text-[#111111] font-bold"
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Create Profile
+                </Button>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
