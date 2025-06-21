@@ -3,15 +3,15 @@ import { ContractFactory } from "ethers";
 
 async function main(): Promise<void> {
   try {
-    // Get the contract factory for NFTSTORE
-    const Escrow: ContractFactory = await ethers.getContractFactory("Escrow");
+    // Get the contract factory for DealFlowOracle
+    const DealFlowOracle: ContractFactory = await ethers.getContractFactory("DealFlowOracle");
 
-    console.log("Deploying Escrow...");
+    console.log("Deploying DealFlowOracle...");
     // Deploy the contract
-    const escrow = await Escrow.deploy();
+    const dealFlowOracle = await DealFlowOracle.deploy();
 
     // Get the deployment transaction
-    const deploymentTx = escrow.deploymentTransaction();
+    const deploymentTx = dealFlowOracle.deploymentTransaction();
     if (!deploymentTx) {
       throw new Error("Deployment transaction is null");
     }
@@ -21,7 +21,7 @@ async function main(): Promise<void> {
     const receipt = await deploymentTx.wait();
 
     if (receipt && receipt.contractAddress) {
-      console.log("FinanceDashboard deployed to:", receipt.contractAddress);
+      console.log("DealFlowOracle deployed to:", receipt.contractAddress);
       console.log("Transaction hash:", deploymentTx.hash);
     } else {
       throw new Error("Deploy failed - no contract address");

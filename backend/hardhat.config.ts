@@ -44,6 +44,11 @@ const config: HardhatUserConfig = {
       gasPrice: 225000000000,
       timeout: 60000 // Increase timeout to 60 seconds
     },
+    "core-testnet": {
+      url: "https://core-testnet.drpc.org",
+      accounts: [`0x${PRIVATE_KEY}`],
+      chainId: 1115,
+    },
   },
 };
 

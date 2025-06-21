@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { civicId, companyId, status, investmentAmount, valuation, notes, meetingScheduled } = body
+    const { civicId, companyId, status, investment_amount, valuation, notes, meetingScheduled } = body
 
     if (!civicId || !companyId) {
       return NextResponse.json({ error: "civicId and companyId are required" }, { status: 400 })
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
         investor_id: user.id,
         company_id: companyId,
         status: status || 'new',
-        investment_amount: investmentAmount,
+        investment_amount: investment_amount,
         valuation,
         notes,
         meeting_scheduled: meetingScheduled
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { dealId, status, investmentAmount, valuation, notes, meetingScheduled } = body
+    const { dealId, status, investment_amount, valuation, notes, meetingScheduled } = body
 
     if (!dealId) {
       return NextResponse.json({ error: "dealId is required" }, { status: 400 })
@@ -142,7 +142,7 @@ export async function PUT(request: NextRequest) {
       .from("deal_flow")
       .update({
         status,
-        investment_amount: investmentAmount,
+        investment_amount: investment_amount,
         valuation,
         notes,
         meeting_scheduled: meetingScheduled
