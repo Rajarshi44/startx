@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
         {
           $project: {
             message: 1,
+            media: 1,
             createdAt: 1,
             "user.username": 1,
             "user.civicId": 1,
@@ -78,14 +79,18 @@ export async function POST(req: NextRequest) {
   const client = new MongoClient(uri);
   
   try {
-    const { message, civicId } = await req.json();
+    const { message, civicId, media } = await req.json();
     
-    if (!message || !civicId) {
-      return NextResponse.json({ error: "Message and civicId are required" }, { status: 400 });
+    if ((!message || message.trim() === '') && !media) {
+      return NextResponse.json({ error: "Message or media is required" }, { status: 400 });
     }
     
-    // Validate message length
-    if (message.length > 1000) {
+    if (!civicId) {
+      return NextResponse.json({ error: "civicId is required" }, { status: 400 });
+    }
+    
+    // Validate message length (only if message exists)
+    if (message && message.length > 1000) {
       return NextResponse.json({ error: "Message too long. Maximum 1000 characters." }, { status: 400 });
     }
     
@@ -108,7 +113,8 @@ export async function POST(req: NextRequest) {
     // Create new message
     const newMessage = {
       userId: user._id,
-      message: message.trim(),
+      message: message ? message.trim() : '',
+      media: media || null,
       createdAt: new Date(),
       editedAt: null
     };
@@ -135,6 +141,7 @@ export async function POST(req: NextRequest) {
         {
           $project: {
             message: 1,
+            media: 1,
             createdAt: 1,
             "user.username": 1,
             "user.civicId": 1,

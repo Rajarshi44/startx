@@ -8,10 +8,22 @@ export interface CommunityUser {
   updatedAt: string
 }
 
+export interface MediaAttachment {
+  type: 'image' | 'audio'
+  url: string
+  publicId: string
+  width?: number
+  height?: number
+  duration?: number
+  format: string
+  bytes: number
+}
+
 export interface CommunityMessage {
   _id: string
   userId: string
   message: string
+  media?: MediaAttachment
   createdAt: string
   editedAt?: string
   user: {
@@ -44,6 +56,7 @@ export interface UserResponse {
 export interface MessageRequest {
   message: string
   civicId: string
+  media?: MediaAttachment
 }
 
 export interface UserRegistrationRequest {

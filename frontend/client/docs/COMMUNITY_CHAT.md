@@ -20,6 +20,9 @@ The community chat system allows verified users on the platform to communicate w
 - Pagination support (20 messages per page)
 - Auto-scroll to latest messages
 - Message timestamps with relative time display
+- **Image sharing**: Upload and share JPEG, PNG, GIF, WebP images (up to 10MB)
+- **Voice messages**: Record and send voice messages with audio controls
+- **Media viewer**: Click to zoom images, play/pause/seek audio with waveform
 
 ### User Interface
 - Dark theme consistent with platform design
@@ -37,7 +40,10 @@ The community chat system allows verified users on the platform to communicate w
 
 ### Messages
 - `GET /api/community/messages?page={page}&limit={limit}` - Fetch messages with pagination
-- `POST /api/community/messages` - Send new message
+- `POST /api/community/messages` - Send new message (with optional media attachment)
+
+### Media Upload
+- `POST /api/community/upload` - Upload images or audio files to Cloudinary
 
 ## Database Schema
 
@@ -60,6 +66,16 @@ The community chat system allows verified users on the platform to communicate w
   _id: ObjectId,
   userId: ObjectId,          // Reference to communityUsers._id
   message: string,           // Message content (max 1000 chars)
+  media: {                   // Optional media attachment
+    type: string,            // 'image' or 'audio'
+    url: string,             // Cloudinary secure URL
+    publicId: string,        // Cloudinary public ID
+    format: string,          // File format (jpg, png, mp3, etc.)
+    bytes: number,           // File size in bytes
+    width: number,           // Image width (images only)
+    height: number,          // Image height (images only)
+    duration: number         // Audio duration in seconds (audio only)
+  },
   createdAt: Date,
   editedAt: Date             // Optional, for future edit functionality
 }
@@ -86,12 +102,20 @@ frontend/client/
 │       └── community/
 │           ├── users/
 │           │   └── route.ts            # User management API
-│           └── messages/
-│               └── route.ts            # Message handling API
+│           ├── messages/
+│           │   └── route.ts            # Message handling API
+│           └── upload/
+│               └── route.ts            # Media upload API (Cloudinary)
+├── components/
+│   └── community/
+│       ├── VoiceRecorder.tsx           # Voice recording component
+│       └── MediaViewer.tsx             # Image/audio display component
+├── lib/
+│   └── cloudinary.ts                   # Cloudinary configuration & utilities
 ├── types/
-│   └── community.ts                    # TypeScript interfaces
+│   └── community.ts                    # TypeScript interfaces (updated with media)
 ├── services/
-│   └── communityService.ts             # API service layer
+│   └── communityService.ts             # API service layer (with media support)
 └── docs/
     └── COMMUNITY_CHAT.md               # This documentation
 ```
@@ -102,7 +126,11 @@ frontend/client/
 1. Navigate to `/community` from the floating navbar
 2. If not registered, enter a username to join
 3. Start chatting with other community members
-4. Use Ctrl+Enter for quick message sending
+4. **Text Messages**: Type and send text messages (up to 1000 characters)
+5. **Image Sharing**: Click "Image" button to upload photos (JPEG, PNG, GIF, WebP up to 10MB)
+6. **Voice Messages**: Click "Voice" button to record and send audio messages
+7. **Media Viewing**: Click images to view full-size, use audio controls to play voice messages
+8. Use Ctrl+Enter for quick message sending
 
 ### For Developers
 ```typescript
@@ -118,12 +146,22 @@ const messageResponse = await communityService.sendMessage({
 })
 ```
 
-## MongoDB Configuration
+## Configuration
 
+### MongoDB
 The system uses the following MongoDB connection:
 - URI: `mongodb+srv://rishi404:giXEpvLDXFg8Jwzd@cluster0.6nhngod.mongodb.net/`
 - Database: `resumeUploads`
 - Collections: `communityUsers`, `communityMessages`
+
+### Cloudinary
+Media files are stored on Cloudinary with the following configuration:
+- Cloud Name: `djydvffdp`
+- API Key: `615679796164426`
+- API Secret: `ObBGhhlXY5FxwCvvMqHIGuCsdxI`
+- Folders: `community/images/`, `community/audio/`
+- Image transformations: Auto-optimization, max 1200x1200px
+- Audio format: Converted to MP3 for compatibility
 
 ## Future Enhancements
 

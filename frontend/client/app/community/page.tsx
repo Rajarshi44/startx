@@ -20,10 +20,17 @@ import {
   ArrowLeft,
   AlertCircle,
   CheckCircle2,
-  RefreshCw
+  RefreshCw,
+  Image as ImageIcon,
+  Mic,
+  Paperclip,
+  X
 } from "lucide-react"
 import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
+import { VoiceRecorder } from "@/components/community/VoiceRecorder"
+import { MediaViewer } from "@/components/community/MediaViewer"
+import type { MediaAttachment } from "@/types/community"
 
 interface CommunityUser {
   _id: string
@@ -36,6 +43,7 @@ interface CommunityUser {
 interface Message {
   _id: string
   message: string
+  media?: MediaAttachment
   createdAt: string
   user: {
     username: string
@@ -55,6 +63,7 @@ export default function CommunityPage() {
   const [isRegistering, setIsRegistering] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false)
   
   const [username, setUsername] = useState("")
   const [newMessage, setNewMessage] = useState("")
@@ -62,7 +71,13 @@ export default function CommunityPage() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   
+  // Media handling states
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Check if user is authenticated
   useEffect(() => {
@@ -82,7 +97,7 @@ export default function CommunityPage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === 'Enter' && newMessage.trim() && !isSending) {
+      if (e.ctrlKey && e.key === 'Enter' && !isSending && !showVoiceRecorder) {
         e.preventDefault()
         sendMessage()
       }
@@ -90,7 +105,16 @@ export default function CommunityPage() {
     
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [newMessage, isSending])
+  }, [newMessage, isSending, showVoiceRecorder])
+  
+  // Cleanup image preview on unmount
+  useEffect(() => {
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview)
+      }
+    }
+  }, [imagePreview])
   
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -196,8 +220,50 @@ export default function CommunityPage() {
     }
   }
   
-  const sendMessage = async () => {
-    if (!user?.id || !newMessage.trim() || !currentUser) return
+  const uploadMedia = async (file: File | Blob, type: 'image' | 'audio'): Promise<MediaAttachment | null> => {
+    if (!user?.id) return null
+    
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('type', type)
+    formData.append('civicId', user.id)
+    
+    try {
+      const response = await fetch('/api/community/upload', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        return {
+          type: data.data.type,
+          url: data.data.secure_url,
+          publicId: data.data.public_id,
+          format: data.data.format,
+          bytes: data.data.bytes,
+          width: data.data.width,
+          height: data.data.height,
+          duration: data.data.duration
+        }
+      } else {
+        throw new Error(data.error || 'Upload failed')
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : "Failed to upload media",
+        variant: "destructive"
+      })
+      return null
+    }
+  }
+
+  const sendMessage = async (mediaAttachment?: MediaAttachment) => {
+    if (!user?.id || !currentUser) return
+    if (!newMessage.trim() && !mediaAttachment) return
     
     setIsSending(true)
     try {
@@ -208,7 +274,8 @@ export default function CommunityPage() {
         },
         body: JSON.stringify({
           message: newMessage.trim(),
-          civicId: user.id
+          civicId: user.id,
+          media: mediaAttachment
         }),
       })
       
@@ -217,9 +284,10 @@ export default function CommunityPage() {
       if (data.success) {
         setMessages(prev => [...prev, data.message])
         setNewMessage("")
+        clearMediaSelection()
         toast({
           title: "Message sent",
-          description: "Your message has been posted successfully",
+          description: mediaAttachment ? "Your message with media has been posted successfully" : "Your message has been posted successfully",
         })
       } else {
         toast({
@@ -237,6 +305,79 @@ export default function CommunityPage() {
       })
     } finally {
       setIsSending(false)
+    }
+  }
+
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid File Type",
+        description: "Only JPEG, PNG, GIF, and WebP images are allowed",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Validate file size (10MB)
+    const maxSize = 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      toast({
+        title: "File Too Large",
+        description: "Image size must be less than 10MB",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setSelectedImage(file)
+    const preview = URL.createObjectURL(file)
+    setImagePreview(preview)
+  }
+
+  const handleImageUploadAndSend = async () => {
+    if (!selectedImage) return
+    
+    setIsUploadingMedia(true)
+    try {
+      const mediaAttachment = await uploadMedia(selectedImage, 'image')
+      if (mediaAttachment) {
+        await sendMessage(mediaAttachment)
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error)
+    } finally {
+      setIsUploadingMedia(false)
+    }
+  }
+
+  const handleVoiceRecordingComplete = async (audioBlob: Blob) => {
+    setIsUploadingMedia(true)
+    try {
+      const mediaAttachment = await uploadMedia(audioBlob, 'audio')
+      if (mediaAttachment) {
+        await sendMessage(mediaAttachment)
+      }
+    } catch (error) {
+      console.error('Error uploading voice message:', error)
+    } finally {
+      setIsUploadingMedia(false)
+      setShowVoiceRecorder(false)
+    }
+  }
+
+  const clearMediaSelection = () => {
+    setSelectedImage(null)
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview)
+      setImagePreview(null)
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
     }
   }
   
@@ -486,9 +627,15 @@ export default function CommunityPage() {
                         </span>
                       </div>
                       
-                      <p className="text-gray-300 break-words">
-                        {message.message}
-                      </p>
+                      {message.message && (
+                        <p className="text-gray-300 break-words mb-2">
+                          {message.message}
+                        </p>
+                      )}
+                      
+                      {message.media && (
+                        <MediaViewer media={message.media} className="mt-2" />
+                      )}
                     </div>
                   </div>
                 ))}
@@ -499,25 +646,130 @@ export default function CommunityPage() {
             
             <Separator className="bg-gray-800" />
             
+            {/* Voice Recorder */}
+            {showVoiceRecorder && (
+              <div className="p-6 pt-0">
+                <VoiceRecorder
+                  onRecordingComplete={handleVoiceRecordingComplete}
+                  onCancel={() => setShowVoiceRecorder(false)}
+                  isUploading={isUploadingMedia}
+                />
+              </div>
+            )}
+            
+            {/* Image Preview */}
+            {selectedImage && imagePreview && (
+              <div className="p-6 pt-0">
+                <Card className="border backdrop-blur-sm"
+                      style={{
+                        borderColor: "rgba(255, 203, 116, 0.2)",
+                        backgroundColor: "rgba(255, 255, 255, 0.05)",
+                      }}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start space-x-4">
+                      <div className="relative">
+                        <img
+                          src={imagePreview}
+                          alt="Image preview"
+                          className="w-20 h-20 object-cover rounded-lg"
+                        />
+                        <Button
+                          onClick={clearMediaSelection}
+                          variant="destructive"
+                          size="sm"
+                          className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-300 mb-1">Ready to send image</p>
+                        <p className="text-xs text-gray-500">
+                          {selectedImage.name} • {(selectedImage.size / 1024 / 1024).toFixed(1)}MB
+                        </p>
+                      </div>
+                      
+                      <Button
+                        onClick={handleImageUploadAndSend}
+                        disabled={isUploadingMedia}
+                        className="bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] font-semibold transition-all duration-300"
+                      >
+                        {isUploadingMedia ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Send className="h-4 w-4 mr-2" />
+                            Send Image
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
             {/* Message Input */}
             <div className="p-6">
               <div className="flex space-x-3">
-                <Textarea
-                  placeholder="Share your thoughts with the community..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  maxLength={1000}
-                  className="flex-1 bg-black/20 border-gray-600 text-white placeholder-gray-400 focus:border-[#ffcb74] resize-none"
-                  rows={3}
-                  disabled={isSending}
-                />
+                <div className="flex flex-col space-y-3 flex-1">
+                  <Textarea
+                    placeholder="Share your thoughts with the community..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    maxLength={1000}
+                    className="bg-black/20 border-gray-600 text-white placeholder-gray-400 focus:border-[#ffcb74] resize-none"
+                    rows={3}
+                    disabled={isSending || showVoiceRecorder || isUploadingMedia}
+                  />
+                  
+                  {/* Media Controls */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        style={{ display: 'none' }}
+                      />
+                      
+                      <Button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isSending || showVoiceRecorder || selectedImage || isUploadingMedia}
+                        variant="outline"
+                        size="sm"
+                        className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800 hover:border-[#ffcb74]"
+                      >
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Image
+                      </Button>
+                      
+                      <Button
+                        onClick={() => setShowVoiceRecorder(true)}
+                        disabled={isSending || showVoiceRecorder || selectedImage || isUploadingMedia}
+                        variant="outline"
+                        size="sm"
+                        className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800 hover:border-[#ffcb74]"
+                      >
+                        <Mic className="h-4 w-4 mr-2" />
+                        Voice
+                      </Button>
+                    </div>
+                    
+                    <div className="text-xs text-gray-500">
+                      {newMessage.length}/1000
+                    </div>
+                  </div>
+                </div>
                 
                 <Button
-                  onClick={sendMessage}
-                  disabled={!newMessage.trim() || isSending}
-                  className="bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] font-semibold transition-all duration-300 px-6"
+                  onClick={() => sendMessage()}
+                  disabled={(!newMessage.trim() && !selectedImage) || isSending || showVoiceRecorder || isUploadingMedia}
+                  className="bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] font-semibold transition-all duration-300 px-6 self-end"
                 >
-                  {isSending ? (
+                  {isSending || isUploadingMedia ? (
                     <RefreshCw className="h-4 w-4 animate-spin" />
                   ) : (
                     <Send className="h-4 w-4" />
@@ -527,7 +779,7 @@ export default function CommunityPage() {
               
               <div className="flex justify-between text-xs text-gray-500 mt-2">
                 <span>Press Ctrl+Enter to send quickly</span>
-                <span>{newMessage.length}/1000</span>
+                <span>Share images up to 10MB or record voice messages</span>
               </div>
             </div>
           </CardContent>

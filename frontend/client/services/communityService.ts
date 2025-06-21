@@ -79,6 +79,24 @@ class CommunityService {
     }
   }
 
+  async uploadMedia(file: File | Blob, type: 'image' | 'audio', civicId: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', type)
+      formData.append('civicId', civicId)
+
+      const response = await fetch(`${this.baseUrl}/upload`, {
+        method: 'POST',
+        body: formData,
+      })
+      return await response.json()
+    } catch (error) {
+      console.error('Error uploading media:', error)
+      return { success: false, error: 'Failed to upload media' }
+    }
+  }
+
   // Helper method to validate username
   validateUsername(username: string): { valid: boolean; error?: string } {
     if (!username || username.length < 3) {
