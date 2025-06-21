@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Lightbulb, Users, TrendingUp, FileText, CheckCircle, Clock, Sparkles, Target, DollarSign, Briefcase, MapPin, Building2, MessageSquare } from "lucide-react"
+import { Lightbulb, Users, TrendingUp, FileText, CheckCircle, Clock, Sparkles, Target, DollarSign, Briefcase, MapPin, Building2, MessageSquare, Search, Download } from "lucide-react"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -65,6 +65,18 @@ export default function FounderDashboard() {
   const [validations, setValidations] = useState<any[]>([])
   const [profileLoading, setProfileLoading] = useState(true)
   const [investors, setInvestors] = useState<any[]>([])
+  
+  // Policy Research State
+  const [isPolicyResearching, setIsPolicyResearching] = useState(false)
+  const [policyResult, setPolicyResult] = useState<string | null>(null)
+  const [policyError, setPolicyError] = useState<string | null>(null)
+  const [policyResearchComplete, setPolicyResearchComplete] = useState(false)
+  
+  // Pitch Deck State
+  const [isPitchGenerating, setIsPitchGenerating] = useState(false)
+  const [pitchResult, setPitchResult] = useState<string | null>(null)
+  const [pitchError, setPitchError] = useState<string | null>(null)
+  const [pitchComplete, setPitchComplete] = useState(false)
   const [jobseekers, setJobseekers] = useState<any[]>([])
   const [investorsLoading, setInvestorsLoading] = useState(false)
   const [jobseekersLoading, setJobseekersLoading] = useState(false)
@@ -262,7 +274,8 @@ export default function FounderDashboard() {
         body: JSON.stringify({ 
           idea: ideaText, 
           civicId: userId,
-          companyId: companies[0]?.id || null 
+          companyId: companies[0]?.id || null,
+          requestType: "validation"
         }),
       })
       const data = await res.json()
@@ -302,6 +315,330 @@ export default function FounderDashboard() {
       setIsValidating(false)
     }
   }
+
+  const handleResearchPolicies = async () => {
+    if (authLoading) {
+      toast({ title: "Info", description: "Please wait while we authenticate you" })
+      return
+    }
+    const userId = user?.username || user?.id;
+    if (!userId) {
+      toast({ title: "Error", description: "Please sign in to research policies", variant: "destructive" })
+      return
+    }
+
+    setIsPolicyResearching(true)
+    setPolicyResult(null)
+    setPolicyError(null)
+    setPolicyResearchComplete(false)
+    
+    try {
+      const res = await fetch("/api/perplexity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          idea: ideaText, 
+          civicId: userId,
+          companyId: companies[0]?.id || null,
+          requestType: "policy"
+        }),
+      })
+      const data = await res.json()
+      
+      if (!res.ok || data.error) {
+        setPolicyError(data.error || "Unknown error from Perplexity API")
+        setPolicyResearchComplete(false)
+        toast({ title: "Error", description: "Failed to research policies", variant: "destructive" })
+      } else {
+        const content = data.choices?.[0]?.message?.content || "No policy research result returned."
+        setPolicyResult(content)
+        setPolicyResearchComplete(true)
+        toast({ title: "Success", description: "Policy research completed!" })
+      }
+    } catch (e: any) {
+      setPolicyError(e.message || "Failed to research policies.")
+      setPolicyResearchComplete(false)
+      toast({ title: "Error", description: "Failed to research policies", variant: "destructive" })
+         } finally {
+       setIsPolicyResearching(false)
+     }
+   }
+
+   const handleGeneratePitch = async () => {
+     if (authLoading) {
+       toast({ title: "Info", description: "Please wait while we authenticate you" })
+       return
+     }
+     const userId = user?.username || user?.id;
+     if (!userId) {
+       toast({ title: "Error", description: "Please sign in to generate pitch deck", variant: "destructive" })
+       return
+     }
+
+     setIsPitchGenerating(true)
+     setPitchResult(null)
+     setPitchError(null)
+     setPitchComplete(false)
+     
+     try {
+       const res = await fetch("/api/perplexity", {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({ 
+           idea: ideaText, 
+           civicId: userId,
+           companyId: companies[0]?.id || null,
+           requestType: "pitch"
+         }),
+       })
+       const data = await res.json()
+       
+       if (!res.ok || data.error) {
+         setPitchError(data.error || "Unknown error from Perplexity API")
+         setPitchComplete(false)
+         toast({ title: "Error", description: "Failed to generate pitch deck", variant: "destructive" })
+       } else {
+         const content = data.choices?.[0]?.message?.content || "No pitch deck generated."
+         setPitchResult(content)
+         setPitchComplete(true)
+         toast({ title: "Success", description: "Pitch deck generated successfully!" })
+       }
+     } catch (e: any) {
+       setPitchError(e.message || "Failed to generate pitch deck.")
+       setPitchComplete(false)
+       toast({ title: "Error", description: "Failed to generate pitch deck", variant: "destructive" })
+     } finally {
+       setIsPitchGenerating(false)
+     }
+   }
+
+   const handleDownloadPitch = () => {
+     if (!pitchResult) return;
+     
+     // Parse markdown into slides for better formatting
+     const slideRegex = /## Slide (\d+): ([^\n]+)\n([\s\S]*?)(?=\n## Slide |\n## |$)/g;
+     const slides: Array<{number: number, title: string, content: string}> = [];
+     let match;
+     while ((match = slideRegex.exec(pitchResult))) {
+       slides.push({
+         number: parseInt(match[1]),
+         title: match[2].trim(),
+         content: match[3].trim()
+       });
+     }
+     
+     // Create a professional HTML pitch deck
+     const htmlContent = `
+       <!DOCTYPE html>
+       <html lang="en">
+       <head>
+         <meta charset="UTF-8">
+         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+         <title>Startup Pitch Deck</title>
+         <style>
+           * {
+             margin: 0;
+             padding: 0;
+             box-sizing: border-box;
+           }
+           
+           body {
+             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+             line-height: 1.6;
+             color: #333;
+             background: #f8f9fa;
+           }
+           
+           .container {
+             max-width: 1200px;
+             margin: 0 auto;
+             padding: 20px;
+           }
+           
+           .slide {
+             background: white;
+             margin: 30px 0;
+             padding: 40px;
+             border-radius: 12px;
+             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+             page-break-after: always;
+             min-height: 80vh;
+             display: flex;
+             flex-direction: column;
+           }
+           
+           .slide:last-child {
+             page-break-after: avoid;
+           }
+           
+           .slide-header {
+             display: flex;
+             align-items: center;
+             margin-bottom: 30px;
+             padding-bottom: 20px;
+             border-bottom: 3px solid #f59e0b;
+           }
+           
+           .slide-number {
+             background: #f59e0b;
+             color: white;
+             width: 50px;
+             height: 50px;
+             border-radius: 50%;
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             font-weight: bold;
+             font-size: 18px;
+             margin-right: 20px;
+           }
+           
+           .slide-title {
+             font-size: 28px;
+             font-weight: 700;
+             color: #1f2937;
+             margin: 0;
+           }
+           
+           .slide-content {
+             flex: 1;
+             font-size: 16px;
+             line-height: 1.8;
+           }
+           
+           .slide-content h1, .slide-content h2, .slide-content h3 {
+             color: #374151;
+             margin: 20px 0 15px 0;
+             font-weight: 600;
+           }
+           
+           .slide-content h1 { font-size: 24px; }
+           .slide-content h2 { font-size: 20px; }
+           .slide-content h3 { font-size: 18px; }
+           
+           .slide-content ul, .slide-content ol {
+             margin: 15px 0;
+             padding-left: 25px;
+           }
+           
+           .slide-content li {
+             margin: 8px 0;
+             color: #4b5563;
+           }
+           
+           .slide-content p {
+             margin: 15px 0;
+             color: #4b5563;
+           }
+           
+           .slide-content strong {
+             color: #1f2937;
+             font-weight: 600;
+           }
+           
+           .slide-content table {
+             width: 100%;
+             border-collapse: collapse;
+             margin: 20px 0;
+           }
+           
+           .slide-content th, .slide-content td {
+             padding: 12px;
+             text-align: left;
+             border-bottom: 1px solid #e5e7eb;
+           }
+           
+           .slide-content th {
+             background: #f59e0b;
+             color: white;
+             font-weight: 600;
+           }
+           
+           .cover-slide {
+             text-align: center;
+             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+             color: white;
+             justify-content: center;
+           }
+           
+           .cover-slide .slide-title {
+             font-size: 48px;
+             color: white;
+             margin-bottom: 20px;
+           }
+           
+           .cover-slide .subtitle {
+             font-size: 24px;
+             opacity: 0.9;
+             margin-bottom: 40px;
+           }
+           
+           .cover-slide .date {
+             font-size: 18px;
+             opacity: 0.8;
+           }
+           
+           @media print {
+             body { background: white; }
+             .slide { 
+               box-shadow: none; 
+               border: 1px solid #e5e7eb;
+               margin: 0;
+               min-height: 100vh;
+             }
+           }
+         </style>
+       </head>
+       <body>
+         <div class="container">
+           ${slides.map((slide, index) => `
+             <div class="slide ${slide.number === 1 ? 'cover-slide' : ''}">
+               ${slide.number === 1 ? `
+                 <h1 class="slide-title">${slide.title}</h1>
+                 <div class="subtitle">AI-Generated Startup Pitch Deck</div>
+                 <div class="date">${new Date().toLocaleDateString()}</div>
+               ` : `
+                 <div class="slide-header">
+                   <div class="slide-number">${slide.number}</div>
+                   <h1 class="slide-title">${slide.title}</h1>
+                 </div>
+               `}
+               <div class="slide-content">
+                 ${slide.content
+                   .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                   .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                   .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+                   .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+                   .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+                   .replace(/^- (.*$)/gm, '<li>$1</li>')
+                   .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+                   .replace(/\n\n/g, '</p><p>')
+                   .replace(/^(?!<[hlu])/gm, '<p>')
+                   .replace(/(?<!>)$/gm, '</p>')
+                   .replace(/<p><\/p>/g, '')
+                   .replace(/<p>(<[hlu])/g, '$1')
+                   .replace(/(<\/[hlu][^>]*>)<\/p>/g, '$1')
+                 }
+               </div>
+             </div>
+           `).join('')}
+         </div>
+       </body>
+       </html>
+     `;
+     
+     const blob = new Blob([htmlContent], { type: 'text/html' });
+     const url = URL.createObjectURL(blob);
+     const a = document.createElement('a');
+     a.href = url;
+     a.download = 'startup-pitch-deck.html';
+     document.body.appendChild(a);
+     a.click();
+     document.body.removeChild(a);
+     URL.revokeObjectURL(url);
+     
+     toast({ title: "Success", description: "Professional pitch deck downloaded! Open the HTML file in your browser and print to PDF." })
+   }
 
   const handleFindCofounders = async () => {
     if (!skillsNeeded.trim() || !experienceLevel.trim()) {
@@ -696,15 +1033,15 @@ export default function FounderDashboard() {
           {/* Main Content */}
           <div className="lg:col-span-2">
             <Tabs defaultValue="idea" className="space-y-8">
-              <TabsList className="grid w-full grid-cols-6 p-1 rounded-xl bg-gray-900/50 border border-amber-500/20 backdrop-blur-sm">
-                {["idea", "team", "investors", "jobs", "pitch", "interview"].map((tab, index) => (
+              <TabsList className="grid w-full grid-cols-5 p-1 rounded-xl bg-gray-900/50 border border-amber-500/20 backdrop-blur-sm">
+                {["idea", "team", "investors", "jobs", "pitch"].map((tab, index) => (
                   <TabsTrigger
                     key={tab}
                     value={tab}
-                    className="text-gray-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-400 data-[state=active]:to-amber-500 data-[state=active]:text-black rounded-lg transition-all duration-300 hover:text-white font-light tracking-wide capitalize animate-slide-in"
+                    className="text-gray-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-400 data-[state=active]:to-amber-500 data-[state=active]:text-black rounded-lg transition-all duration-300 hover:text-white font-light tracking-wide capitalize animate-slide-in text-xs"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
-                    {tab}
+                    {tab === "policy" ? "Policy" : tab}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -877,6 +1214,122 @@ export default function FounderDashboard() {
                                   </div>
                                 )}
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{sections[section] || "No data."}</ReactMarkdown>
+                              </ShadTabsContent>
+                            ))}
+                          </ShadTabs>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+
+              <TabsContent value="policy" className="space-y-8 animate-fade-in-up">
+                <Card className="border border-amber-500/20 rounded-2xl bg-black/80 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-500 hover:shadow-2xl hover:shadow-amber-500/10">
+                  <CardHeader className="pb-6">
+                    <CardTitle className="flex items-center text-white font-light text-xl">
+                      <FileText className="mr-3 h-6 w-6 text-amber-400 animate-pulse-soft" />
+                      Policy Research
+                    </CardTitle>
+                    <CardDescription className="text-gray-400 font-light leading-relaxed">
+                      Discover government policies, programs, and regulatory information for your startup
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      <div>
+                        <label className="text-sm font-light mb-3 block text-gray-300 tracking-wide">
+                          Research policies for your startup idea
+                        </label>
+                        <Textarea
+                          placeholder="Describe your startup idea to research relevant policies, government programs, and regulatory requirements..."
+                          value={ideaText}
+                          onChange={(e) => setIdeaText(e.target.value)}
+                          className="min-h-[140px] border border-amber-500/20 rounded-xl p-4 bg-black/50 text-white placeholder:text-gray-500 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 transition-all duration-300 font-light leading-relaxed"
+                        />
+                      </div>
+                      <Button
+                        onClick={handleResearchPolicies}
+                        disabled={isPolicyResearching || !ideaText.trim()}
+                        className="font-light px-8 py-3 rounded-xl transition-all duration-300 bg-gradient-to-r from-amber-400 to-amber-500 text-black hover:from-amber-500 hover:to-amber-600 hover:shadow-lg hover:shadow-amber-500/25 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                      >
+                        {isPolicyResearching ? (
+                          <>
+                            <Clock className="mr-2 h-4 w-4 animate-spin" />
+                            Researching Policies...
+                          </>
+                        ) : (
+                          <>
+                            <Search className="mr-2 h-4 w-4" />
+                            Research Policies
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {isPolicyResearching && (
+                  <div className="flex justify-center py-8 animate-fade-in">
+                    <div className="flex flex-col items-center space-y-4">
+                      <div className="w-16 h-16 border-2 border-amber-500/30 border-t-amber-400 rounded-full animate-spin" />
+                      <div className="font-light text-amber-400 tracking-wide animate-pulse">
+                        Researching government policies and programs...
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {policyError && (
+                  <Card className="border border-red-500/30 rounded-2xl bg-black/80 backdrop-blur-sm animate-slide-in-up shadow-2xl shadow-red-500/10">
+                    <CardHeader>
+                      <CardTitle className="text-red-400 font-light text-xl">Research Error</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-red-300 font-light">{policyError}</div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {policyResearchComplete && policyResult && (
+                  <Card className="border border-amber-500/30 rounded-2xl bg-black/80 backdrop-blur-sm animate-slide-in-up shadow-2xl shadow-amber-500/10">
+                    <CardHeader>
+                      <CardTitle className="text-white font-light text-xl">Policy Research Results</CardTitle>
+                    </CardHeader>
+                    <CardContent className="prose prose-invert max-w-none text-white">
+                      {(() => {
+                        // Parse markdown into sections
+                        const sectionOrder = [
+                          "Relevant Government Policies",
+                          "Government Initiatives & Programs",
+                          "Regulatory Compliance",
+                          "Success Stories",
+                          "Implementation Timeline",
+                          "Regional Variations"
+                        ];
+                        const sectionRegex = /## ([^\n]+)\n([\s\S]*?)(?=\n## |$)/g;
+                        const sections: Record<string, string> = {};
+                        let match;
+                        while ((match = sectionRegex.exec(policyResult))) {
+                          sections[match[1].trim()] = match[2].trim();
+                        }
+                        
+                        return (
+                          <ShadTabs defaultValue={sectionOrder[0]} className="w-full">
+                            <ShadTabsList className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-6 bg-black/30 border border-amber-500/20 rounded-xl">
+                              {sectionOrder.map((section: string) => (
+                                <ShadTabsTrigger
+                                  key={section}
+                                  value={section}
+                                  className="text-gray-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-400 data-[state=active]:to-amber-500 data-[state=active]:text-black rounded-lg transition-all duration-300 hover:text-white font-light tracking-wide capitalize text-xs p-2"
+                                >
+                                  {section.replace(/&/g, 'and')}
+                                </ShadTabsTrigger>
+                              ))}
+                            </ShadTabsList>
+                            {sectionOrder.map((section: string) => (
+                              <ShadTabsContent key={section} value={section} className="pt-2">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{sections[section] || "No data available for this section."}</ReactMarkdown>
                               </ShadTabsContent>
                             ))}
                           </ShadTabs>
@@ -1479,38 +1932,121 @@ export default function FounderDashboard() {
                   <CardHeader>
                     <CardTitle className="flex items-center text-white font-light text-xl">
                       <FileText className="mr-3 h-6 w-6 text-amber-400 animate-pulse-soft" />
-                      Pitch Deck Builder
+                      AI Pitch Deck Generator
                     </CardTitle>
                     <CardDescription className="text-gray-400 font-light leading-relaxed">
-                      Create a compelling pitch deck with AI assistance
+                      Create a comprehensive pitch deck with AI assistance and download as PDF
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-6">
-                      <div className="grid md:grid-cols-2 gap-6">
-                        {["Company Name", "Industry"].map((label, index) => (
-                          <div key={label} className="animate-slide-in" style={{ animationDelay: `${index * 100}ms` }}>
-                            <label className="text-sm font-light mb-3 block text-gray-300 tracking-wide">{label}</label>
-                            <Input
-                              placeholder={label === "Company Name" ? "Your startup name" : "e.g., FinTech, HealthTech"}
-                              className="border border-amber-500/20 rounded-xl bg-black/50 text-white placeholder:text-gray-500 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 transition-all duration-300 font-light"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                      <div className="animate-slide-in" style={{ animationDelay: "200ms" }}>
-                        <label className="text-sm font-light mb-3 block text-gray-300 tracking-wide">One-liner</label>
-                        <Input
-                          placeholder="Describe your startup in one sentence"
-                          className="border border-amber-500/20 rounded-xl bg-black/50 text-white placeholder:text-gray-500 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 transition-all duration-300 font-light"
+                      <div>
+                        <label className="text-sm font-light mb-3 block text-gray-300 tracking-wide">
+                          Describe your startup idea for pitch deck generation
+                        </label>
+                        <Textarea
+                          placeholder="Describe your startup idea, target market, solution, and business model..."
+                          value={ideaText}
+                          onChange={(e) => setIdeaText(e.target.value)}
+                          className="min-h-[140px] border border-amber-500/20 rounded-xl p-4 bg-black/50 text-white placeholder:text-gray-500 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 transition-all duration-300 font-light leading-relaxed"
                         />
                       </div>
-                      <Button className="font-light px-8 py-3 rounded-xl transition-all duration-300 bg-gradient-to-r from-amber-400 to-amber-500 text-black hover:from-amber-500 hover:to-amber-600 hover:shadow-lg hover:shadow-amber-500/25 hover:scale-105">
-                        Generate Pitch Deck
+                      <Button
+                        onClick={handleGeneratePitch}
+                        disabled={isPitchGenerating || !ideaText.trim()}
+                        className="font-light px-8 py-3 rounded-xl transition-all duration-300 bg-gradient-to-r from-amber-400 to-amber-500 text-black hover:from-amber-500 hover:to-amber-600 hover:shadow-lg hover:shadow-amber-500/25 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                      >
+                        {isPitchGenerating ? (
+                          <>
+                            <Clock className="mr-2 h-4 w-4 animate-spin" />
+                            Generating Pitch Deck...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Generate Pitch Deck
+                          </>
+                        )}
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
+
+                {isPitchGenerating && (
+                  <div className="flex justify-center py-8 animate-fade-in">
+                    <div className="flex flex-col items-center space-y-4">
+                      <div className="w-16 h-16 border-2 border-amber-500/30 border-t-amber-400 rounded-full animate-spin" />
+                      <div className="font-light text-amber-400 tracking-wide animate-pulse">
+                        Creating your pitch deck...
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {pitchError && (
+                  <Card className="border border-red-500/30 rounded-2xl bg-black/80 backdrop-blur-sm animate-slide-in-up shadow-2xl shadow-red-500/10">
+                    <CardHeader>
+                      <CardTitle className="text-red-400 font-light text-xl">Generation Error</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-red-300 font-light">{pitchError}</div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {pitchComplete && pitchResult && (
+                  <Card className="border border-amber-500/30 rounded-2xl bg-black/80 backdrop-blur-sm animate-slide-in-up shadow-2xl shadow-amber-500/10">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <CardTitle className="text-white font-light text-xl">Your Pitch Deck</CardTitle>
+                      <Button
+                        onClick={handleDownloadPitch}
+                        className="bg-green-600 hover:bg-green-700 text-white font-light px-4 py-2 rounded-lg transition-all duration-300"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Download PDF
+                      </Button>
+                    </CardHeader>
+                    <CardContent className="max-w-none">
+                      {(() => {
+                        // Parse markdown into slides
+                        const slideRegex = /## Slide (\d+): ([^\n]+)\n([\s\S]*?)(?=\n## Slide |\n## |$)/g;
+                        const slides: Array<{number: number, title: string, content: string}> = [];
+                        let match;
+                        while ((match = slideRegex.exec(pitchResult))) {
+                          slides.push({
+                            number: parseInt(match[1]),
+                            title: match[2].trim(),
+                            content: match[3].trim()
+                          });
+                        }
+                        
+                        return (
+                          <div className="space-y-6">
+                            {slides.map((slide, index) => (
+                              <Card key={slide.number} className="bg-black/40 border-amber-500/20 hover:border-amber-500/40 transition-all duration-300">
+                                <CardHeader className="pb-4">
+                                  <CardTitle className="text-amber-400 text-xl font-light flex items-center">
+                                    <div className="w-8 h-8 bg-amber-400 text-black rounded-full flex items-center justify-center text-sm font-bold mr-3">
+                                      {slide.number}
+                                    </div>
+                                    {slide.title}
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent className="prose prose-invert max-w-none">
+                                  <div className="text-white [&>*]:text-white [&>h1]:text-amber-300 [&>h2]:text-amber-300 [&>h3]:text-amber-200 [&>h4]:text-amber-200 [&>strong]:text-amber-100 [&>ul]:text-white [&>ol]:text-white [&>li]:text-white [&>p]:text-white [&>table]:text-white [&>td]:text-white [&>th]:text-amber-200 [&>th]:bg-amber-500/20">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                      {slide.content}
+                                    </ReactMarkdown>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="interview" className="space-y-8 animate-fade-in-up">
