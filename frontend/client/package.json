@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:tavus": "node scripts/test-tavus.js"
   },
   "dependencies": {
     "@civic/auth": "^0.8.0",

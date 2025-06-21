@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/utils/supabase/server"
 import { cookies } from "next/headers"
 
@@ -15,11 +15,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient(cookieStore)
 
     // Get user ID
-    const { data: user, error: userError } = await supabase
-      .from("users")
-      .select("id")
-      .eq("civic_id", civicId)
-      .single()
+    const { data: user, error: userError } = await supabase.from("users").select("id").eq("civic_id", civicId).single()
 
     if (userError || !user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
@@ -41,7 +37,7 @@ export async function GET(request: NextRequest) {
       .eq("user_id", user.id)
       .single()
 
-    if (profileError && profileError.code !== 'PGRST116') {
+    if (profileError && profileError.code !== "PGRST116") {
       console.error("Profile fetch error:", profileError)
       return NextResponse.json({ error: "Failed to fetch profile" }, { status: 500 })
     }
@@ -73,9 +69,31 @@ export async function GET(request: NextRequest) {
       console.error("Applications fetch error:", applicationsError)
     }
 
+    // Load interview sessions
+    const { data: sessions, error: sessionsError } = await supabase
+      .from("interview_sessions")
+      .select(`
+        *,
+        job_posting:job_postings(
+          id,
+          title,
+          company:companies(
+            id,
+            name
+          )
+        )
+      `)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+
+    if (sessionsError) {
+      console.error("Sessions fetch error:", sessionsError)
+    }
+
     return NextResponse.json({
       profile: profile || null,
-      applications: applications || []
+      applications: applications || [],
+      interviewSessions: sessions || [],
     })
   } catch (error) {
     console.error("API error:", error)
@@ -96,11 +114,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient(cookieStore)
 
     // Get user ID
-    const { data: user, error: userError } = await supabase
-      .from("users")
-      .select("id")
-      .eq("civic_id", civicId)
-      .single()
+    const { data: user, error: userError } = await supabase.from("users").select("id").eq("civic_id", civicId).single()
 
     if (userError || !user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
@@ -113,16 +127,16 @@ export async function POST(request: NextRequest) {
       last_name: profileData.lastName,
       phone: profileData.phone,
       city: profileData.city,
-      country: profileData.country || 'India',
-      date_of_birth: profileData.dateOfBirth,
+      country: profileData.country || "India",
+      date_of_birth: profileData.dateOfBirth && profileData.dateOfBirth.trim() !== "" ? profileData.dateOfBirth : null,
       gender: profileData.gender,
-      languages: profileData.languages || ['English'],
+      languages: profileData.languages || ["English"],
       profile_picture_url: profileData.profilePictureUrl,
       current_status: profileData.currentStatus,
       experience_level: profileData.experience,
       education_level: profileData.education,
       university: profileData.university,
-      graduation_year: profileData.graduationYear ? parseInt(profileData.graduationYear) : null,
+      graduation_year: profileData.graduationYear ? Number.parseInt(profileData.graduationYear) : null,
       skills: profileData.skills || [],
       resume_url: profileData.resumeUrl,
       portfolio_url: profileData.portfolio,
@@ -134,10 +148,10 @@ export async function POST(request: NextRequest) {
       work_modes: profileData.workModes || [],
       salary_expectation: profileData.salaryExpectation,
       availability: profileData.availability,
-      willing_to_relocate: profileData.relocate === 'Yes',
+      willing_to_relocate: profileData.relocate === "Yes",
       bio: profileData.bio,
       achievements: profileData.achievements || [],
-      certifications: profileData.certifications || []
+      certifications: profileData.certifications || [],
     }
 
     // Upsert jobseeker profile
@@ -172,11 +186,7 @@ export async function PUT(request: NextRequest) {
     const supabase = await createClient(cookieStore)
 
     // Get user ID
-    const { data: user, error: userError } = await supabase
-      .from("users")
-      .select("id")
-      .eq("civic_id", civicId)
-      .single()
+    const { data: user, error: userError } = await supabase.from("users").select("id").eq("civic_id", civicId).single()
 
     if (userError || !user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
@@ -200,4 +210,4 @@ export async function PUT(request: NextRequest) {
     console.error("API error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-} 
+}
