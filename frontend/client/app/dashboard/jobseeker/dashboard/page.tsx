@@ -275,84 +275,85 @@ export default function JobSeekerDashboard() {
   )
 
   return (
-    <div className="min-h-screen bg-[#2f2f2f]">
+    <div className="min-h-screen bg-gradient-to-br from-[#232526] via-[#414345] to-[#232526] relative overflow-x-hidden">
+      {/* Decorative background shapes */}
+      <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-[#ffcb74]/10 rounded-full blur-3xl -z-10 animate-pulse-slow" style={{filter:'blur(120px)',top:'-200px',left:'-200px'}} />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-[#ffcb74]/10 rounded-full blur-2xl -z-10 animate-pulse-slow" style={{filter:'blur(100px)',bottom:'-100px',right:'-100px'}} />
       {/* Header */}
-      <header className="bg-[#111111] border-b border-[#ffcb74]/20">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#ffcb74] rounded-xl flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-[#111111]" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-[#f6f6f6]">JobSeeker Pro Dashboard</h1>
-                <p className="text-[#f6f6f6]/70">Your gateway to exciting opportunities</p>
-              </div>
+      <header className="bg-transparent border-b border-[#ffcb74]/10 shadow-none backdrop-blur-xl">
+        <div className="container mx-auto px-4 py-8 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-[#ffcb74] rounded-2xl flex items-center justify-center shadow-lg">
+              <Sparkles className="w-6 h-6 text-[#232526]" />
             </div>
-            <Badge className="bg-[#ffcb74] text-[#111111] hover:bg-[#ffcb74]/80">Active Job Seeker</Badge>
+            <div>
+              <h1 className="text-3xl font-extrabold text-[#f6f6f6] tracking-tight leading-tight">JobSeeker Pro</h1>
+              <p className="text-[#f6f6f6]/60 text-base font-light">Your gateway to exciting opportunities</p>
+            </div>
           </div>
+          <Badge className="bg-[#ffcb74] text-[#232526] hover:bg-[#ffcb74]/80 shadow-md rounded-full px-4 py-2 text-base">Active Job Seeker</Badge>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
+      <div className="container mx-auto px-4 py-12">
+        <div className="grid lg:grid-cols-3 gap-12">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            <Tabs defaultValue="profile" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4 bg-[#111111] border border-[#ffcb74]/20">
+            <Tabs defaultValue="profile" className="space-y-10">
+              <TabsList className="grid w-full grid-cols-4 bg-[#232526] border border-[#ffcb74]/10 rounded-2xl shadow-sm overflow-">
                 <TabsTrigger
                   value="profile"
-                  className="data-[state=active]:bg-[#ffcb74] data-[state=active]:text-[#111111] text-[#f6f6f6]"
+                  className="data-[state=active]:bg-[#ffcb74] data-[state=active]:text-[#232526] text-[#f6f6f6] text-lg font-semibold py-4 transition-all"
                 >
                   Profile
                 </TabsTrigger>
                 <TabsTrigger
                   value="jobs"
-                  className="data-[state=active]:bg-[#ffcb74] data-[state=active]:text-[#111111] text-[#f6f6f6]"
+                  className="data-[state=active]:bg-[#ffcb74] data-[state=active]:text-[#232526] text-[#f6f6f6] text-lg font-semibold py-4 transition-all"
                 >
                   Jobs
                 </TabsTrigger>
                 <TabsTrigger
                   value="interview"
-                  className="data-[state=active]:bg-[#ffcb74] data-[state=active]:text-[#111111] text-[#f6f6f6]"
+                  className="data-[state=active]:bg-[#ffcb74] data-[state=active]:text-[#232526] text-[#f6f6f6] text-lg font-semibold py-4 transition-all"
                 >
                   Interview
                 </TabsTrigger>
                 <TabsTrigger
                   value="applications"
-                  className="data-[state=active]:bg-[#ffcb74] data-[state=active]:text-[#111111] text-[#f6f6f6]"
+                  className="data-[state=active]:bg-[#ffcb74] data-[state=active]:text-[#232526] text-[#f6f6f6] text-lg font-semibold py-4 transition-all"
                 >
                   Applications
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="profile" className="space-y-6">
+              <TabsContent value="profile" className="space-y-10">
                 {/* Personal Information */}
-                <Card className="bg-[#111111]/80 border-[#ffcb74]/20">
+                <Card className="bg-[#232526]/90 border-none rounded-3xl shadow-xl p-8">
                   <CardHeader>
-                    <CardTitle className="flex items-center text-[#f6f6f6]">
-                      <Users className="mr-2 h-5 w-5 text-[#ffcb74]" />
+                    <CardTitle className="flex items-center text-[#f6f6f6] text-2xl font-bold gap-2">
+                      <Users className="h-6 w-6 text-[#ffcb74]" />
                       Personal Information
                     </CardTitle>
-                    <CardDescription className="text-[#f6f6f6]/70">Your basic personal details</CardDescription>
+                    <CardDescription className="text-[#f6f6f6]/60 text-lg">Your basic personal details</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center gap-6 mb-6">
-                      <div className="w-20 h-20 bg-[#ffcb74]/20 rounded-3xl border-4 border-[#ffcb74] shadow-lg flex items-center justify-center overflow-hidden">
+                  <CardContent className="space-y-6">
+                    <div className="flex items-center gap-8 mb-8">
+                      <div className="w-24 h-24 bg-[#ffcb74]/20 rounded-3xl border-4 border-[#ffcb74] shadow-xl flex items-center justify-center overflow-hidden">
                         {data.profilePicture ? (
                           <img
-                            src={URL.createObjectURL(data.profilePicture) || "/placeholder.svg" || "/placeholder.svg"}
+                            src={URL.createObjectURL(data.profilePicture) || "/placeholder.svg"}
                             alt="Profile"
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover rounded-2xl"
                           />
                         ) : (
-                          <Camera className="w-8 h-8 text-[#ffcb74]" />
+                          <Camera className="w-10 h-10 text-[#ffcb74]" />
                         )}
                       </div>
                       <div className="flex gap-3">
                         <label className="cursor-pointer">
-                          <Button className="bg-[#111111] hover:bg-[#111111]/80 text-[#f6f6f6] border border-[#ffcb74]">
-                            <Upload className="w-4 h-4 mr-2" />
+                          <Button className="bg-[#232526] hover:bg-[#232526]/80 text-[#f6f6f6] border border-[#ffcb74] rounded-full px-6 py-2 shadow-md">
+                            <Upload className="w-5 h-5 mr-2" />
                             Upload Photo
                           </Button>
                           <input
@@ -365,7 +366,7 @@ export default function JobSeekerDashboard() {
                       </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid md:grid-cols-2 gap-6">
                       <div>
                         <label className="text-sm font-medium mb-2 block text-[#f6f6f6]">First Name</label>
                         <Input
@@ -384,7 +385,7 @@ export default function JobSeekerDashboard() {
                       </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid md:grid-cols-2 gap-6">
                       <div>
                         <label className="text-sm font-medium mb-2 block text-[#f6f6f6]">Email</label>
                         <Input
@@ -403,7 +404,7 @@ export default function JobSeekerDashboard() {
                       </div>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-4">
+                    <div className="grid md:grid-cols-3 gap-6">
                       <div>
                         <label className="text-sm font-medium mb-2 block text-[#f6f6f6]">City</label>
                         <Input
@@ -445,15 +446,15 @@ export default function JobSeekerDashboard() {
                 </Card>
 
                 {/* Professional Information */}
-                <Card className="bg-[#111111]/80 border-[#ffcb74]/20">
+                <Card className="bg-[#232526]/90 border-none rounded-3xl shadow-xl p-8">
                   <CardHeader>
-                    <CardTitle className="flex items-center text-[#f6f6f6]">
-                      <GraduationCap className="mr-2 h-5 w-5 text-[#ffcb74]" />
+                    <CardTitle className="flex items-center text-[#f6f6f6] text-2xl font-bold gap-2">
+                      <GraduationCap className="h-6 w-6 text-[#ffcb74]" />
                       Professional Background
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid md:grid-cols-2 gap-4">
+                  <CardContent className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-6">
                       <div>
                         <label className="text-sm font-medium mb-2 block text-[#f6f6f6]">Current Status</label>
                         <Input
@@ -472,7 +473,7 @@ export default function JobSeekerDashboard() {
                       </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid md:grid-cols-2 gap-6">
                       <div>
                         <label className="text-sm font-medium mb-2 block text-[#f6f6f6]">Education</label>
                         <Input
@@ -502,7 +503,7 @@ export default function JobSeekerDashboard() {
                       </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid md:grid-cols-2 gap-6">
                       <div>
                         <label className="text-sm font-medium mb-2 block text-[#f6f6f6]">Portfolio URL</label>
                         <Input
@@ -541,7 +542,7 @@ export default function JobSeekerDashboard() {
 
                     <Button
                       onClick={handleUpdateProfile}
-                      className="bg-[#111111] hover:bg-[#111111]/80 text-[#f6f6f6] border border-[#ffcb74]"
+                      className="bg-[#ffcb74] hover:bg-[#ffcb74]/90 text-[#232526] font-bold rounded-full px-8 py-3 shadow-lg mt-6 text-lg transition-all"
                     >
                       Update Profile
                     </Button>
@@ -549,67 +550,65 @@ export default function JobSeekerDashboard() {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="jobs" className="space-y-6">
-                <Card className="bg-[#111111]/80 border-[#ffcb74]/20">
+              <TabsContent value="jobs" className="space-y-10">
+                <Card className="bg-[#232526]/90 border-none rounded-3xl shadow-xl p-8">
                   <CardHeader>
-                    <CardTitle className="flex items-center text-[#f6f6f6]">
-                      <Briefcase className="mr-2 h-5 w-5 text-[#ffcb74]" />
+                    <CardTitle className="flex items-center text-[#f6f6f6] text-2xl font-bold gap-2">
+                      <Briefcase className="h-6 w-6 text-[#ffcb74]" />
                       Recommended Jobs
                     </CardTitle>
-                    <CardDescription className="text-[#f6f6f6]/70">
+                    <CardDescription className="text-[#f6f6f6]/60 text-lg">
                       Jobs matched to your skills and preferences
                     </CardDescription>
                   </CardHeader>
                 </Card>
-
-                <div className="space-y-4">
+                {/* ...existing code for job cards, but update Card classes: ... */}
+                <div className="space-y-6">
                   {jobs.slice(0, 6).map((job, index) => {
                     const matchScore = Math.floor(Math.random() * 20) + 80 // Mock match calculation
                     return (
                       <Card
                         key={index}
-                        className="bg-[#111111]/80 border-[#ffcb74]/20 hover:border-[#ffcb74]/50 transition-all duration-300 hover:shadow-lg"
+                        className="bg-[#232526]/90 border-none rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]"
                       >
-                        <CardContent className="p-6">
-                          <div className="flex items-start justify-between mb-4">
-                            <div>
-                              <h3 className="text-lg font-semibold mb-1 text-[#f6f6f6]">{job.title}</h3>
-                              <p className="text-[#ffcb74] font-medium mb-2">{job.company?.name}</p>
-                              <div className="flex items-center space-x-4 text-sm text-[#f6f6f6]/70 mb-3">
-                                <div className="flex items-center">
-                                  <MapPin className="h-4 w-4 mr-1" />
-                                  {job.location}
-                                </div>
-                                <div className="flex items-center">
-                                  <DollarSign className="h-4 w-4 mr-1" />
-                                  {job.salary_range}
-                                </div>
-                                <div className="flex items-center">
-                                  <Clock className="h-4 w-4 mr-1" />
-                                  {new Date(job.created_at).toLocaleDateString()}
-                                </div>
+                        <CardContent className="p-8 flex flex-col md:flex-row items-start justify-between gap-6">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold mb-1 text-[#f6f6f6]">{job.title}</h3>
+                            <p className="text-[#ffcb74] font-medium mb-2">{job.company?.name}</p>
+                            <div className="flex items-center space-x-4 text-sm text-[#f6f6f6]/70 mb-3">
+                              <div className="flex items-center">
+                                <MapPin className="h-4 w-4 mr-1" />
+                                {job.location}
                               </div>
-                              <div className="flex flex-wrap gap-2 mb-3">
-                                {job.skills_required?.slice(0, 3).map((skill: string, skillIndex: number) => (
-                                  <Badge
-                                    key={skillIndex}
-                                    className="bg-[#ffcb74]/20 text-[#ffcb74] hover:bg-[#ffcb74]/30 text-xs"
-                                  >
-                                    {skill}
-                                  </Badge>
-                                ))}
+                              <div className="flex items-center">
+                                <DollarSign className="h-4 w-4 mr-1" />
+                                {job.salary_range}
+                              </div>
+                              <div className="flex items-center">
+                                <Clock className="h-4 w-4 mr-1" />
+                                {new Date(job.created_at).toLocaleDateString()}
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="text-2xl font-bold text-[#ffcb74] mb-1">{matchScore}%</div>
-                              <div className="text-xs text-[#f6f6f6]/50 mb-3">Match</div>
-                              <Button
-                                onClick={() => handleApplyToJob(job.id)}
-                                className="bg-[#ffcb74] hover:bg-[#ffcb74]/80 text-[#111111] font-semibold"
-                              >
-                                Apply Now
-                              </Button>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {job.skills_required?.slice(0, 3).map((skill: string, skillIndex: number) => (
+                                <Badge
+                                  key={skillIndex}
+                                  className="bg-[#ffcb74]/20 text-[#ffcb74] hover:bg-[#ffcb74]/30 text-xs"
+                                >
+                                  {skill}
+                                </Badge>
+                              ))}
                             </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-[#ffcb74] mb-1">{matchScore}%</div>
+                            <div className="text-xs text-[#f6f6f6]/50 mb-3">Match</div>
+                            <Button
+                              onClick={() => handleApplyToJob(job.id)}
+                              className="bg-[#ffcb74] hover:bg-[#ffcb74]/90 text-[#232526] font-bold rounded-full px-4 py-2"
+                            >
+                              Apply Now
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>
@@ -618,7 +617,7 @@ export default function JobSeekerDashboard() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="interview" className="space-y-6">
+              <TabsContent value="interview" className="space-y-10">
                 {/* Company Selection */}
                 <Card className="bg-[#111111]/80 border-[#ffcb74]/20">
                   <CardHeader>
@@ -673,7 +672,7 @@ export default function JobSeekerDashboard() {
                       </div>
                       <Button
                         onClick={() => setShowTavusInterview(true)}
-                        className="bg-[#ffcb74] hover:bg-[#ffcb74]/80 text-[#111111] font-semibold"
+                        className="bg-[#ffcb74] hover:bg-[#ffcb74]/90 text-[#232526] font-bold rounded-full px-6 py-3 shadow-md"
                       >
                         Start AI Video Interview
                       </Button>
@@ -725,7 +724,7 @@ export default function JobSeekerDashboard() {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="applications" className="space-y-6">
+              <TabsContent value="applications" className="space-y-10">
                 <Card className="bg-[#111111]/80 border-[#ffcb74]/20">
                   <CardHeader>
                     <CardTitle className="flex items-center text-[#f6f6f6]">
@@ -785,9 +784,9 @@ export default function JobSeekerDashboard() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Profile Completion */}
-            <Card className="bg-[#111111]/80 border-[#ffcb74]/20">
+            <Card className="bg-[#232526]/90 border-none rounded-3xl shadow-xl p-6">
               <CardHeader>
                 <CardTitle className="text-lg text-[#f6f6f6]">Profile Completion</CardTitle>
               </CardHeader>
@@ -821,7 +820,7 @@ export default function JobSeekerDashboard() {
             </Card>
 
             {/* Job Alerts */}
-            <Card className="bg-[#111111]/80 border-[#ffcb74]/20">
+            <Card className="bg-[#232526]/90 border-none rounded-3xl shadow-xl p-6">
               <CardHeader>
                 <CardTitle className="text-lg text-[#f6f6f6] flex items-center">
                   <Bell className="w-4 h-4 mr-2 text-[#ffcb74]" />
@@ -843,7 +842,7 @@ export default function JobSeekerDashboard() {
             </Card>
 
             {/* Quick Stats */}
-            <Card className="bg-[#111111]/80 border-[#ffcb74]/20">
+            <Card className="bg-[#232526]/90 border-none rounded-3xl shadow-xl p-6">
               <CardHeader>
                 <CardTitle className="text-lg text-[#f6f6f6] flex items-center">
                   <TrendingUp className="w-4 h-4 mr-2 text-[#ffcb74]" />
@@ -873,7 +872,7 @@ export default function JobSeekerDashboard() {
             </Card>
 
             {/* Achievement Badge */}
-            <Card className="bg-gradient-to-br from-[#ffcb74]/20 to-[#ffcb74]/10 border-[#ffcb74]/30">
+            <Card className="bg-gradient-to-br from-[#ffcb74]/20 to-[#ffcb74]/5 border-none rounded-3xl shadow-xl p-8">
               <CardContent className="p-6 text-center">
                 <Star className="w-8 h-8 text-[#ffcb74] mx-auto mb-2" />
                 <h3 className="font-semibold text-[#f6f6f6] mb-1">Profile Expert</h3>
