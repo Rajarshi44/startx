@@ -536,11 +536,19 @@ export default function CommunityPage() {
       <main className="flex-1 flex flex-col max-w-4xl mx-auto p-6">
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-center space-x-3 mb-2">
-            <Users className="h-6 w-6" style={{ color: "#ffcb74" }} />
-            <h1 className="text-2xl font-bold" style={{ color: "#f6f6f6" }}>
-              Mentoring Forum
-            </h1>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-3">
+              <Users className="h-6 w-6" style={{ color: "#ffcb74" }} />
+              <h1 className="text-2xl font-bold" style={{ color: "#f6f6f6" }}>
+                Mentoring Forum
+              </h1>
+            </div>
+            <Link href="/community/posts">
+              <Button variant="outline" className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800 hover:border-[#ffcb74]">
+                <MessageCircle className="h-4 w-4 mr-2" />
+                View Posts
+              </Button>
+            </Link>
           </div>
           <p className="text-gray-400">
             Connect with fellow entrepreneurs, investors, and mentors in the StartupHub community

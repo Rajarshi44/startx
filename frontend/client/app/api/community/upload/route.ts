@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
-    const type = formData.get('type') as string; // 'image' or 'audio'
+    const type = formData.get('type') as string; // 'image', 'audio', or 'video'
     const civicId = formData.get('civicId') as string;
 
     if (!file || !type || !civicId) {
@@ -22,11 +22,18 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Validate file size (10MB max)
-    const maxSize = 10 * 1024 * 1024;
+    // Validate file size based on type
+    let maxSize = 10 * 1024 * 1024; // 10MB default
+    if (type === 'video') {
+      maxSize = 100 * 1024 * 1024; // 100MB for videos
+    } else if (type === 'audio') {
+      maxSize = 20 * 1024 * 1024; // 20MB for audio
+    }
+
     if (file.size > maxSize) {
+      const maxSizeMB = Math.round(maxSize / (1024 * 1024));
       return NextResponse.json({ 
-        error: "File size must be less than 10MB" 
+        error: `File size must be less than ${maxSizeMB}MB` 
       }, { status: 400 });
     }
 
@@ -87,9 +94,36 @@ export async function POST(req: NextRequest) {
         ).end(buffer);
       });
 
+    } else if (type === 'video') {
+      // Validate video types
+      const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/mov', 'video/avi', 'video/quicktime'];
+      if (!allowedVideoTypes.includes(file.type)) {
+        return NextResponse.json({ 
+          error: "Only MP4, WebM, MOV, AVI, and QuickTime video files are allowed" 
+        }, { status: 400 });
+      }
+
+      // Upload video to Cloudinary
+      uploadResult = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          {
+            resource_type: "video",
+            folder: "community/videos",
+            transformation: [
+              { quality: "auto" },
+              { width: 1920, height: 1080, crop: "limit" }
+            ]
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        ).end(buffer);
+      });
+
     } else {
       return NextResponse.json({ 
-        error: "Invalid file type. Must be 'image' or 'audio'" 
+        error: "Invalid file type. Must be 'image', 'audio', or 'video'" 
       }, { status: 400 });
     }
 
