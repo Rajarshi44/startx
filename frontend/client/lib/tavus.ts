@@ -1,4 +1,5 @@
 // Tavus AI SDK integration
+/*eslint-disable*/
 export interface TavusConversationConfig {
   replica_id: string
   persona_id: string

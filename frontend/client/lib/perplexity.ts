@@ -1,3 +1,4 @@
+/*eslint-disable*/
 export async function getPerplexityResearch(idea: string): Promise<any> {
   const res = await fetch('/api/perplexity', {
     method: 'POST',

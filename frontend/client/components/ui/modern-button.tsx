@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils"
 import { Button, type ButtonProps } from "@/components/ui/button"
 import { forwardRef } from "react"
 
-interface ModernButtonProps extends ButtonProps {
+interface ModernButtonProps extends Omit<ButtonProps, "variant" | "size"> {
   variant?: "primary" | "secondary" | "ghost" | "outline"
   size?: "sm" | "md" | "lg" | "xl"
 }

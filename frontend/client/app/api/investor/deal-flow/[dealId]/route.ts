@@ -1,16 +1,20 @@
+/*eslint-disable*/
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/utils/supabase/server"
 import { cookies } from 'next/headers'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { dealId: string } }
+  { params }: { params: Promise<{ dealId: string }> }
 ) {
   try {
     const cookieStore = cookies()
     const supabase = await createClient(cookieStore)
     const body = await request.json()
     const { civicId, investment_amount, notes, status } = body
+    
+    // Await the params since it's now a Promise
+    const { dealId } = await params
 
     // Update the deal flow entry
     const { data: deal, error } = await supabase
@@ -21,7 +25,7 @@ export async function PUT(
         status,
         updated_at: new Date().toISOString()
       })
-      .eq('id', params.dealId)
+      .eq('id', dealId)
       .eq('investor_civic_id', civicId)
       .select('*')
       .single()

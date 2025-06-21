@@ -166,6 +166,21 @@ CREATE TABLE IF NOT EXISTS investor_profiles (
   portfolio_size INTEGER DEFAULT 0,
   total_investments NUMERIC DEFAULT 0,
   bio TEXT,
+  -- Additional fields for comprehensive investor profile
+  investment_focus TEXT,
+  stage_preference TEXT,
+  sector_preference TEXT,
+  check_size_min NUMERIC,
+  check_size_max NUMERIC,
+  portfolio_companies INTEGER,
+  investment_criteria TEXT,
+  contact_email TEXT,
+  website TEXT,
+  linkedin TEXT,
+  phone TEXT,
+  location TEXT,
+  aum NUMERIC, -- Assets Under Management
+  notable_investments TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(user_id) -- Keep unique constraint to ensure one investor profile per user

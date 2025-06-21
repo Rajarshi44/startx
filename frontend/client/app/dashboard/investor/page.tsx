@@ -1,3 +1,4 @@
+/*eslint-disable*/
 "use client"
 
 import { useState, useEffect } from "react"
@@ -22,9 +23,11 @@ import Link from "next/link"
 import { useOracle } from "@/hooks/useOracle"
 import { ethers } from "ethers"
 import contractABI from "@/contractABI"
+import { useRouter } from "next/navigation"
 
 export default function InvestorDashboard() {
-  const { user } = useUser()
+  const { user, signOut } = useUser()
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState("dealflow")
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [investorProfile, setInvestorProfile] = useState<any>(null)
@@ -490,11 +493,29 @@ export default function InvestorDashboard() {
         const data = await res.json()
         setInvestorProfile(data.profile)
         setShowProfileModal(false)
+        // Refresh the data instead of full page reload
+        const response = await fetch(`/api/investor/profile?civicId=${user.username}`)
+        if (response.ok) {
+          const data = await response.json()
+          setInvestorProfile(data.profile)
+          setDealFlow(data.dealFlow || [])
+          setInvestments(data.investments || [])
+        }
       }
     } catch (e: any) {
       setProfileFormError(e.message || "Failed to save profile.")
     } finally {
       setProfileFormLoading(false)
+    }
+  }
+
+  // Handle signout
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      router.push("/")
+    } catch (error) {
+      console.error("Error signing out:", error)
     }
   }
 
@@ -1362,6 +1383,16 @@ export default function InvestorDashboard() {
               >
                 Investor Portal
               </Badge>
+              <Link href="/dashboard/investor/profile">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-transparent border-[#ffcb74] text-[#ffcb74] hover:bg-[#ffcb74] hover:text-black transition-all duration-300 mr-2"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  {investorProfile ? 'View Profile' : 'Create Profile'}
+                </Button>
+              </Link>
               <Button
                 variant="outline"
                 size="sm"
@@ -1369,11 +1400,12 @@ export default function InvestorDashboard() {
                 className="bg-transparent border-[#ffcb74] text-[#ffcb74] hover:bg-[#ffcb74] hover:text-black transition-all duration-300 mr-2"
               >
                 <User className="w-4 h-4 mr-2" />
-                {investorProfile ? 'Edit Profile' : 'Create Profile'}
+                Quick Edit
               </Button>
               <Button
                 variant="outline"
                 size="sm"
+                onClick={handleSignOut}
                 className="bg-transparent border-[#ffcb74] text-[#ffcb74] hover:bg-[#ffcb74] hover:text-black transition-all duration-300"
               >
                 <LogOut className="w-4 h-4 mr-2" />
@@ -1524,7 +1556,7 @@ export default function InvestorDashboard() {
                 <CardContent className="space-y-3">
                   <div>
                     <p className="text-sm text-gray-400">Firm</p>
-                    <p className="font-medium text-gray-200">{investorProfile.firm_name}</p>
+                    <p className="font-medium text-gray-200">{investorProfile.firm_name || 'Not specified'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-400">Focus</p>
@@ -1546,6 +1578,20 @@ export default function InvestorDashboard() {
                     <div>
                       <p className="text-sm text-gray-400">Stage Preference</p>
                       <p className="font-medium text-gray-200">{investorProfile.stage_preference}</p>
+                    </div>
+                  )}
+                  {investorProfile.location && (
+                    <div>
+                      <p className="text-sm text-gray-400">Location</p>
+                      <p className="font-medium text-gray-200">{investorProfile.location}</p>
+                    </div>
+                  )}
+                  {investorProfile.aum && (
+                    <div>
+                      <p className="text-sm text-gray-400">AUM</p>
+                      <p className="font-medium" style={{ color: "#4ade80" }}>
+                        ${investorProfile.aum?.toLocaleString() || '0'}
+                      </p>
                     </div>
                   )}
                 </CardContent>

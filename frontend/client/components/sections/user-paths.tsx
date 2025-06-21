@@ -50,7 +50,7 @@ export function UserPathsSection() {
         <div className="text-center mb-20">
           <DisplayMD className="mb-6">Choose Your Path</DisplayMD>
           <BodyMedium className="max-w-3xl mx-auto text-xl">
-            Whether you're a founder with an idea, looking for opportunities, or ready to invest, we have the perfect
+            Whether you&aptos;re a founder with an idea, looking for opportunities, or ready to invest, we have the perfect
             journey tailored for you.
           </BodyMedium>
         </div>
