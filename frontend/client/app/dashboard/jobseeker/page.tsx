@@ -659,8 +659,16 @@ export default function JobSeekerOnboarding() {
             </label>
             <FileUpload
               file={data.resume}
-              onUpload={(file) => { update("resume", file); setAutoFilled(false); setFieldsToFill([]); }}
-              onRemove={() => { update("resume", null); setAutoFilled(false); setFieldsToFill([]); }}
+              onUpload={(file) => {
+                update("resume", file);
+                setAutoFilled(false);
+                setFieldsToFill([]);
+              }}
+              onRemove={() => {
+                update("resume", null);
+                setAutoFilled(false);
+                setFieldsToFill([]);
+              }}
               accept=".pdf,.doc,.docx"
               icon={FileText}
               title="Upload your resume"
@@ -668,15 +676,27 @@ export default function JobSeekerOnboarding() {
             />
             {data.resume && (
               <div className="mt-2 flex gap-2 items-center">
-                <Button onClick={handleParseResume} disabled={parsing} className="bg-[#ffcb74] text-[#111111] font-bold">
+                <Button
+                  onClick={handleParseResume}
+                  disabled={parsing}
+                  className="bg-[#ffcb74] text-[#111111] font-bold"
+                >
                   {parsing ? "Parsing..." : "Parse Resume with Gemini"}
                 </Button>
-                {autoFilled && <span className="text-green-400 text-sm">Fields auto-filled!</span>}
-                {parseError && <span className="text-red-400 text-sm">{parseError}</span>}
+                {autoFilled && (
+                  <span className="text-green-400 text-sm">
+                    Fields auto-filled!
+                  </span>
+                )}
+                {parseError && (
+                  <span className="text-red-400 text-sm">{parseError}</span>
+                )}
               </div>
             )}
             {fieldsToFill.length > 0 && (
-              <div className="mt-2 text-yellow-400 text-sm">Missing fields: {fieldsToFill.join(", ")}</div>
+              <div className="mt-2 text-yellow-400 text-sm">
+                Missing fields: {fieldsToFill.join(", ")}
+              </div>
             )}
           </div>
 
@@ -921,7 +941,35 @@ export default function JobSeekerOnboarding() {
 
   // List of required fields for jobseeker_profiles
   const requiredFields: (keyof JobSeekerData)[] = [
-    "firstName", "lastName", "email", "phone", "city", "country", "dateOfBirth", "gender", "languages", "currentStatus", "experience", "education", "university", "graduationYear", "skills", "resume", "portfolio", "linkedIn", "github", "interests", "careerGoals", "jobTypes", "workModes", "salaryExpectation", "availability", "relocate", "bio", "achievements", "certifications"
+    "firstName",
+    "lastName",
+    "email",
+    "phone",
+    "city",
+    "country",
+    "dateOfBirth",
+    "gender",
+    "languages",
+    "currentStatus",
+    "experience",
+    "education",
+    "university",
+    "graduationYear",
+    "skills",
+    "resume",
+    "portfolio",
+    "linkedIn",
+    "github",
+    "interests",
+    "careerGoals",
+    "jobTypes",
+    "workModes",
+    "salaryExpectation",
+    "availability",
+    "relocate",
+    "bio",
+    "achievements",
+    "certifications",
   ];
 
   // Resume parsing handler
@@ -932,23 +980,36 @@ export default function JobSeekerOnboarding() {
     try {
       const form = new FormData();
       form.append("file", data.resume);
-      const res = await axios.post("/api/gemini-extract", form, { headers: { "Content-Type": "multipart/form-data" } });
+      const res = await axios.post("/api/gemini-extract", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       const extracted = res.data;
       // Map Gemini fields to our state
-      // eslint-disable-next-line prefer-const
       let newData = { ...data };
       Object.entries(geminiToStateMap).forEach(([geminiKey, stateKey]) => {
-        if (extracted[geminiKey] && (!data[stateKey] || data[stateKey] === "" || (Array.isArray(data[stateKey]) && (data[stateKey] as any[]).length === 0))) {
+        if (
+          extracted[geminiKey] &&
+          (!data[stateKey] ||
+            data[stateKey] === "" ||
+            (Array.isArray(data[stateKey]) &&
+              (data[stateKey] as any[]).length === 0))
+        ) {
           newData[stateKey] = extracted[geminiKey];
         }
       });
       setData(newData);
       setAutoFilled(true);
       // Find missing fields
-      const missing = requiredFields.filter((f) => !newData[f] || (Array.isArray(newData[f]) && (newData[f] as any[]).length === 0));
+      const missing = requiredFields.filter(
+        (f) =>
+          !newData[f] ||
+          (Array.isArray(newData[f]) && (newData[f] as any[]).length === 0)
+      );
       setFieldsToFill(missing);
     } catch (e: any) {
-      setParseError("Failed to parse resume. Please try again or fill manually.");
+      setParseError(
+        "Failed to parse resume. Please try again or fill manually."
+      );
     } finally {
       setParsing(false);
     }
@@ -965,7 +1026,7 @@ export default function JobSeekerOnboarding() {
           civicId: civicId,
           role: "jobseeker",
           email: data.email,
-          name: `${data.firstName} ${data.lastName}`
+          name: `${data.firstName} ${data.lastName}`,
         }),
       });
       if (!roleRes.ok) {
@@ -979,7 +1040,7 @@ export default function JobSeekerOnboarding() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           civicId: civicId,
-          ...data
+          ...data,
         }),
       });
       if (!profileRes.ok) {
@@ -994,7 +1055,7 @@ export default function JobSeekerOnboarding() {
         form.append("civicId", civicId);
         await fetch("/api/upload-mongo", {
           method: "POST",
-          body: form
+          body: form,
         });
       }
       alert("🎉 Profile created successfully! Welcome to the platform!");
@@ -1026,32 +1087,44 @@ export default function JobSeekerOnboarding() {
           />
           {data.resume && (
             <div className="mt-4 flex flex-col items-center gap-2">
-              <Button onClick={async () => {
-                setParsing(true);
-                setParseError("");
-                try {
-                  const form = new FormData();
-                  form.append("file", data.resume!);
-                  const res = await axios.post("/api/gemini-extract", form, { headers: { "Content-Type": "multipart/form-data" } });
-                  const extracted = res.data;
-                  let newData = { ...data };
-                  Object.entries(geminiToStateMap).forEach(([geminiKey, stateKey]) => {
-                    if (extracted[geminiKey]) {
-                      newData[stateKey] = extracted[geminiKey];
-                    }
-                  });
-                  setData(newData);
-                  setAutoFilled(true);
-                  setPdfStep(false);
-                } catch (e) {
-                  setParseError("Failed to parse resume. Please try again or fill manually.");
-                } finally {
-                  setParsing(false);
-                }
-              }} disabled={parsing} className="bg-[#ffcb74] text-[#111111] font-bold w-full">
+              <Button
+                onClick={async () => {
+                  setParsing(true);
+                  setParseError("");
+                  try {
+                    const form = new FormData();
+                    form.append("file", data.resume!);
+                    const res = await axios.post("/api/gemini-extract", form, {
+                      headers: { "Content-Type": "multipart/form-data" },
+                    });
+                    const extracted = res.data;
+                    let newData = { ...data };
+                    Object.entries(geminiToStateMap).forEach(
+                      ([geminiKey, stateKey]) => {
+                        if (extracted[geminiKey]) {
+                          newData[stateKey] = extracted[geminiKey];
+                        }
+                      }
+                    );
+                    setData(newData);
+                    setAutoFilled(true);
+                    setPdfStep(false);
+                  } catch (e) {
+                    setParseError(
+                      "Failed to parse resume. Please try again or fill manually."
+                    );
+                  } finally {
+                    setParsing(false);
+                  }
+                }}
+                disabled={parsing}
+                className="bg-[#ffcb74] text-[#111111] font-bold w-full"
+              >
                 {parsing ? "Parsing..." : "Parse Resume"}
               </Button>
-              {parseError && <span className="text-red-400 text-sm">{parseError}</span>}
+              {parseError && (
+                <span className="text-red-400 text-sm">{parseError}</span>
+              )}
             </div>
           )}
         </div>
