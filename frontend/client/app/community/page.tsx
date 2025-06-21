@@ -134,82 +134,6 @@ export default function CommunityPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [user, loadMessages, toast])
-
-  // Check if user is authenticated
-  useEffect(() => {
-    if (!user?.id) {
-      setIsLoading(false)
-      return
-    }
-    
-    checkUserRegistration()
-  }, [user, checkUserRegistration])
-  
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
-  const sendMessage = useCallback(async () => {
-    if (!user?.id || !newMessage.trim() || !currentUser) return
-    
-    setIsSending(true)
-    try {
-      const response = await fetch('/api/community/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: newMessage.trim(),
-          civicId: user.id
-        }),
-      })
-      
-      const data = await response.json()
-      
-      if (data.success) {
-        setMessages(prev => [...prev, data.message])
-        setNewMessage("")
-        toast({
-          title: "Message sent",
-          description: "Your message has been posted.",
-        })
-      } else {
-        toast({
-          title: "Error",
-          description: data.error || "Failed to send message",
-          variant: "destructive"
-        })
-      }
-    } catch (error) {
-      console.error("Error sending message:", error)
-      toast({
-        title: "Error",
-        description: "Failed to send message",
-        variant: "destructive"
-      })
-    } finally {
-      setIsSending(false)
-    }
-  }, [user, newMessage, currentUser, toast])
-  
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === 'Enter' && newMessage.trim() && !isSending) {
-        e.preventDefault()
-        sendMessage()
-      }
-    }
-    
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [newMessage, isSending, sendMessage])
-  
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
   const registerUser = async () => {
@@ -286,8 +210,50 @@ export default function CommunityPage() {
     }
   }
   
-  const sendMessage = async () => {
-    if (!user?.id || !newMessage.trim() || !currentUser) return
+  const uploadMedia = async (file: File | Blob, type: 'image' | 'audio'): Promise<MediaAttachment | null> => {
+    if (!user?.id) return null
+    
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('type', type)
+    formData.append('civicId', user.id)
+    
+    try {
+      const response = await fetch('/api/community/upload', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        return {
+          type: data.data.type,
+          url: data.data.secure_url,
+          publicId: data.data.public_id,
+          format: data.data.format,
+          bytes: data.data.bytes,
+          width: data.data.width,
+          height: data.data.height,
+          duration: data.data.duration
+        }
+      } else {
+        throw new Error(data.error || 'Upload failed')
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : "Failed to upload media",
+        variant: "destructive"
+      })
+      return null
+    }
+  }
+
+  const sendMessage = async (mediaAttachment?: MediaAttachment) => {
+    if (!user?.id || !currentUser) return
+    if (!newMessage.trim() && !mediaAttachment) return
     
     setIsSending(true)
     try {
@@ -298,7 +264,8 @@ export default function CommunityPage() {
         },
         body: JSON.stringify({
           message: newMessage.trim(),
-          civicId: user.id
+          civicId: user.id,
+          media: mediaAttachment
         }),
       })
       
@@ -307,9 +274,10 @@ export default function CommunityPage() {
       if (data.success) {
         setMessages(prev => [...prev, data.message])
         setNewMessage("")
+        clearMediaSelection()
         toast({
           title: "Message sent",
-          description: "Your message has been posted successfully",
+          description: mediaAttachment ? "Your message with media has been posted successfully" : "Your message has been posted successfully",
         })
       } else {
         toast({
@@ -327,6 +295,79 @@ export default function CommunityPage() {
       })
     } finally {
       setIsSending(false)
+    }
+  }
+
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid File Type",
+        description: "Only JPEG, PNG, GIF, and WebP images are allowed",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Validate file size (10MB)
+    const maxSize = 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      toast({
+        title: "File Too Large",
+        description: "Image size must be less than 10MB",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setSelectedImage(file)
+    const preview = URL.createObjectURL(file)
+    setImagePreview(preview)
+  }
+
+  const handleImageUploadAndSend = async () => {
+    if (!selectedImage) return
+    
+    setIsUploadingMedia(true)
+    try {
+      const mediaAttachment = await uploadMedia(selectedImage, 'image')
+      if (mediaAttachment) {
+        await sendMessage(mediaAttachment)
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error)
+    } finally {
+      setIsUploadingMedia(false)
+    }
+  }
+
+  const handleVoiceRecordingComplete = async (audioBlob: Blob) => {
+    setIsUploadingMedia(true)
+    try {
+      const mediaAttachment = await uploadMedia(audioBlob, 'audio')
+      if (mediaAttachment) {
+        await sendMessage(mediaAttachment)
+      }
+    } catch (error) {
+      console.error('Error uploading voice message:', error)
+    } finally {
+      setIsUploadingMedia(false)
+      setShowVoiceRecorder(false)
+    }
+  }
+
+  const clearMediaSelection = () => {
+    setSelectedImage(null)
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview)
+      setImagePreview(null)
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
     }
   }
   
@@ -686,7 +727,7 @@ export default function CommunityPage() {
                       
                       <Button
                         onClick={() => fileInputRef.current?.click()}
-                        disabled={isSending || showVoiceRecorder || selectedImage || isUploadingMedia}
+                        disabled={isSending || showVoiceRecorder || !!selectedImage || isUploadingMedia}
                         variant="outline"
                         size="sm"
                         className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800 hover:border-[#ffcb74]"
@@ -697,7 +738,7 @@ export default function CommunityPage() {
                       
                       <Button
                         onClick={() => setShowVoiceRecorder(true)}
-                        disabled={isSending || showVoiceRecorder || selectedImage || isUploadingMedia}
+                        disabled={isSending || showVoiceRecorder || !!selectedImage || isUploadingMedia}
                         variant="outline"
                         size="sm"
                         className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800 hover:border-[#ffcb74]"
