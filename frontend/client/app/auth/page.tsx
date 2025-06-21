@@ -7,13 +7,30 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Rocket, Mail, Lock, User, ArrowLeft } from "lucide-react"
-import { useUser } from "@civic/auth/react"
+import { Rocket, Mail, Lock, User, ArrowLeft, Wallet, Shield, Zap, ExternalLink, AlertCircle } from "lucide-react"
+import { useUser } from "@civic/auth-web3/react"
 import Link from "next/link"
+import { 
+  useAccount, 
+  useConnect, 
+  useBalance,
+  useDisconnect 
+} from 'wagmi'
+import { 
+  UserButton 
+} from '@civic/auth-web3/react'
 
-export default function AuthPage() {
+// Separate component for the auth content that needs access to hooks
+const AuthContent = () => {
   const [isLoading, setIsLoading] = useState(false)
-  const { user, signIn } = useUser()
+  const [hasMetaMask, setHasMetaMask] = useState(false)
+  const userContext = useUser()
+  const { connect, connectors, error: connectError } = useConnect()
+  const { address, isConnected } = useAccount()
+  const { disconnect } = useDisconnect()
+  const balance = useBalance({
+    address: address,
+  })
 
   const mountRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<THREE.Scene | null>(null)
@@ -21,6 +38,13 @@ export default function AuthPage() {
   const globeRef = useRef<THREE.Group | null>(null)
   const particlesRef = useRef<THREE.Points | null>(null)
   const ringsRef = useRef<THREE.Group | null>(null)
+
+  // Check if MetaMask is installed
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setHasMetaMask(typeof window.ethereum !== 'undefined')
+    }
+  }, [])
 
   useEffect(() => {
     if (!mountRef.current) return
@@ -229,13 +253,35 @@ export default function AuthPage() {
     }
   }, [])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // Connect to MetaMask wallet
+  const connectWallet = async () => {
+    if (!hasMetaMask) {
+      window.open('https://metamask.io/download/', '_blank')
+      return
+    }
+
     setIsLoading(true)
-    setTimeout(() => {
+    try {
+      const metaMaskConnector = connectors.find(connector => connector.name === 'MetaMask')
+      if (metaMaskConnector) {
+        await connect({ connector: metaMaskConnector })
+      } else {
+        // Fallback to injected connector
+        await connect({ connector: connectors[0] })
+      }
+    } catch (error) {
+      console.error('Error connecting wallet:', error)
+    } finally {
       setIsLoading(false)
-      window.location.href = "/onboarding"
-    }, 2000)
+    }
+  }
+
+  const handleContinueToOnboarding = () => {
+    window.location.href = "/onboarding"
+  }
+
+  const handleDisconnectWallet = () => {
+    disconnect()
   }
 
   return (
@@ -251,9 +297,12 @@ export default function AuthPage() {
             <ArrowLeft className="h-5 w-5" style={{ color: "#ffcb74" }} />
             <span style={{ color: "#ffcb74" }}>Back to Home</span>
           </Link>
-          <div className="text-2xl font-bold">
-            <span style={{ color: "#f6f6f6" }}>Startup</span>
-            <span style={{ color: "#ffcb74" }}>Hub</span>
+          <div className="flex items-center space-x-4">
+            <div className="text-2xl font-bold">
+              <span style={{ color: "#f6f6f6" }}>Startup</span>
+              <span style={{ color: "#ffcb74" }}>Hub</span>
+            </div>
+            {userContext.user && <UserButton />}
           </div>
         </nav>
 
@@ -269,9 +318,9 @@ export default function AuthPage() {
                 </h1>
               </div>
               <p className="text-xl text-gray-300">
-                {user
-                  ? "You're signed in! Continue to select your role."
-                  : "Join the startup ecosystem and connect with founders, investors, and opportunities."}
+                {userContext.user
+                  ? "Connect your MetaMask wallet to access the Web3 startup ecosystem."
+                  : "Join the Web3 startup ecosystem with secure, decentralized authentication."}
               </p>
             </div>
 
@@ -285,179 +334,130 @@ export default function AuthPage() {
             >
               <CardHeader className="pb-4">
                 <CardTitle className="text-2xl" style={{ color: "#f6f6f6" }}>
-                  {user ? "Continue Your Journey" : "Get Started"}
+                  {userContext.user ? "Connect Your Wallet" : "Get Started with Web3"}
                 </CardTitle>
                 <CardDescription style={{ color: "#d1d1d1" }}>
-                  {user
-                    ? "Go to onboarding to select your role and preferences."
-                    : "Sign in to your account or create a new one"}
+                  {userContext.user
+                    ? "Connect your existing MetaMask wallet to access all features."
+                    : "Secure, decentralized authentication powered by Civic Auth"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {!user ? (
-                  <Tabs defaultValue="signin" className="space-y-4">
-                    <TabsList
-                      className="grid w-full grid-cols-2"
-                      style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
-                    >
-                      <TabsTrigger
-                        value="signin"
-                        className="data-[state=active]:bg-[#ffcb74] data-[state=active]:text-black"
-                      >
-                        Sign In
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="signup"
-                        className="data-[state=active]:bg-[#ffcb74] data-[state=active]:text-black"
-                      >
-                        Sign Up
-                      </TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="signin">
-                      <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium" style={{ color: "#f6f6f6" }}>
-                            Email
-                          </label>
-                          <div className="relative">
-                            <Mail className="absolute left-3 top-3 h-4 w-4" style={{ color: "#ffcb74" }} />
-                            <Input
-                              type="email"
-                              placeholder="Enter your email"
-                              className="pl-10 bg-transparent border-gray-600 text-white placeholder-gray-400 focus:border-[#ffcb74]"
-                              required
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium" style={{ color: "#f6f6f6" }}>
-                            Password
-                          </label>
-                          <div className="relative">
-                            <Lock className="absolute left-3 top-3 h-4 w-4" style={{ color: "#ffcb74" }} />
-                            <Input
-                              type="password"
-                              placeholder="Enter your password"
-                              className="pl-10 bg-transparent border-gray-600 text-white placeholder-gray-400 focus:border-[#ffcb74]"
-                              required
-                            />
-                          </div>
-                        </div>
-                        <Button
-                          type="submit"
-                          className="w-full text-white hover:opacity-90 transition-all duration-300"
-                          style={{ backgroundColor: "#111111" }}
-                          disabled={isLoading}
-                        >
-                          {isLoading ? "Signing in..." : "Sign In"}
-                        </Button>
-                      </form>
-                    </TabsContent>
-
-                    <TabsContent value="signup">
-                      <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium" style={{ color: "#f6f6f6" }}>
-                            Full Name
-                          </label>
-                          <div className="relative">
-                            <User className="absolute left-3 top-3 h-4 w-4" style={{ color: "#ffcb74" }} />
-                            <Input
-                              type="text"
-                              placeholder="Enter your full name"
-                              className="pl-10 bg-transparent border-gray-600 text-white placeholder-gray-400 focus:border-[#ffcb74]"
-                              required
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium" style={{ color: "#f6f6f6" }}>
-                            Email
-                          </label>
-                          <div className="relative">
-                            <Mail className="absolute left-3 top-3 h-4 w-4" style={{ color: "#ffcb74" }} />
-                            <Input
-                              type="email"
-                              placeholder="Enter your email"
-                              className="pl-10 bg-transparent border-gray-600 text-white placeholder-gray-400 focus:border-[#ffcb74]"
-                              required
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium" style={{ color: "#f6f6f6" }}>
-                            Password
-                          </label>
-                          <div className="relative">
-                            <Lock className="absolute left-3 top-3 h-4 w-4" style={{ color: "#ffcb74" }} />
-                            <Input
-                              type="password"
-                              placeholder="Create a password"
-                              className="pl-10 bg-transparent border-gray-600 text-white placeholder-gray-400 focus:border-[#ffcb74]"
-                              required
-                            />
-                          </div>
-                        </div>
-                        <Button
-                          type="submit"
-                          className="w-full text-white hover:opacity-90 transition-all duration-300"
-                          style={{ backgroundColor: "#111111" }}
-                          disabled={isLoading}
-                        >
-                          {isLoading ? "Creating account..." : "Create Account"}
-                        </Button>
-                      </form>
-                    </TabsContent>
-                  </Tabs>
-                ) : null}
-
-                <div className="mt-6">
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-600" />
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-2 text-gray-400" style={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }}>
-                        {user ? "Ready to continue?" : "Or continue with"}
-                      </span>
+                {!userContext.user ? (
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3 p-3 rounded-lg" style={{ backgroundColor: "rgba(255, 203, 116, 0.1)" }}>
+                        <Shield className="h-5 w-5" style={{ color: "#ffcb74" }} />
+                        <span className="text-sm text-gray-300">Secure Web3 Authentication</span>
+                      </div>
+                      <div className="flex items-center space-x-3 p-3 rounded-lg" style={{ backgroundColor: "rgba(255, 203, 116, 0.1)" }}>
+                        <Wallet className="h-5 w-5" style={{ color: "#ffcb74" }} />
+                        <span className="text-sm text-gray-300">Connect Your Existing Wallet</span>
+                      </div>
+                      <div className="flex items-center space-x-3 p-3 rounded-lg" style={{ backgroundColor: "rgba(255, 203, 116, 0.1)" }}>
+                        <Zap className="h-5 w-5" style={{ color: "#ffcb74" }} />
+                        <span className="text-sm text-gray-300">Seamless Onboarding</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="mt-4 space-y-3">
-                    {!user ? (
-                      <Button
-                        onClick={signIn}
-                        className="w-full bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] font-semibold transition-all duration-300"
-                      >
-                        Continue with Civic Auth
-                      </Button>
+                ) : (
+                  <div className="space-y-4">
+                    {!isConnected ? (
+                      <div className="space-y-4">
+                        {!hasMetaMask ? (
+                          <div className="text-center p-4 rounded-lg" style={{ backgroundColor: "rgba(239, 68, 68, 0.1)" }}>
+                            <AlertCircle className="h-12 w-12 mx-auto mb-2" style={{ color: "#ef4444" }} />
+                            <p className="text-sm text-red-400 mb-3">
+                              MetaMask is required to use this application
+                            </p>
+                            <Button
+                              onClick={connectWallet}
+                              className="w-full bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white hover:from-[#ea580c] hover:to-[#f97316] font-semibold transition-all duration-300"
+                            >
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              Install MetaMask
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="text-center p-4 rounded-lg" style={{ backgroundColor: "rgba(255, 203, 116, 0.1)" }}>
+                            <Wallet className="h-12 w-12 mx-auto mb-2" style={{ color: "#ffcb74" }} />
+                            <p className="text-sm text-gray-300 mb-3">
+                              Connect your MetaMask wallet to continue
+                            </p>
+                            <Button
+                              onClick={connectWallet}
+                              disabled={isLoading}
+                              className="w-full bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] font-semibold transition-all duration-300"
+                            >
+                              {isLoading ? "Connecting..." : "Connect MetaMask Wallet"}
+                            </Button>
+                            {connectError && (
+                              <p className="text-xs text-red-400 mt-2">
+                                Error: {connectError.message}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     ) : (
-                      <Button
-                        onClick={() => (window.location.href = "/onboarding")}
-                        className="w-full bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] font-semibold transition-all duration-300"
-                      >
-                        Continue to Onboarding
-                      </Button>
-                    )}
-
-                    {!user && (
-                      <div className="grid grid-cols-2 gap-3">
-                        <Button
-                          variant="outline"
-                          className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800 hover:border-[#ffcb74]"
-                        >
-                          Google
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800 hover:border-[#ffcb74]"
-                        >
-                          LinkedIn
-                        </Button>
+                      <div className="space-y-4">
+                        <div className="text-center p-4 rounded-lg" style={{ backgroundColor: "rgba(34, 197, 94, 0.1)" }}>
+                          <Shield className="h-12 w-12 mx-auto mb-2" style={{ color: "#22c55e" }} />
+                          <p className="text-sm text-green-400 mb-2">✓ Wallet Connected</p>
+                          <p className="text-xs text-gray-400 mb-2">
+                            Address: {address?.slice(0, 6)}...{address?.slice(-4)}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Balance: {
+                              balance?.data
+                                ? `${Number(balance.data.formatted).toFixed(4)} ${balance.data.symbol}`
+                                : 'Loading...'
+                            }
+                          </p>
+                        </div>
+                        
+                        <div className="flex space-x-2">
+                          <Button
+                            onClick={handleDisconnectWallet}
+                            variant="outline"
+                            className="flex-1 bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800 hover:border-[#ffcb74]"
+                          >
+                            Disconnect
+                          </Button>
+                          <Button
+                            onClick={handleContinueToOnboarding}
+                            className="flex-1 bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] font-semibold transition-all duration-300"
+                          >
+                            Continue
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
-                </div>
+                )}
+
+                {!userContext.user && (
+                  <div className="mt-6">
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-600" />
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 text-gray-400" style={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }}>
+                          Secure Web3 Authentication
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <Button
+                        onClick={() => userContext.signIn()}
+                        className="w-full bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] font-semibold transition-all duration-300"
+                      >
+                        Sign In with Civic Auth
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -476,9 +476,13 @@ export default function AuthPage() {
 
         {/* Footer */}
         <footer className="p-6 text-left text-gray-500 text-sm">
-          <p>&copy; 2024 StartupHub. Powered by AI. Built for the future.</p>
+          <p>&copy; 2024 StartupHub. Powered by Web3. Built for the future.</p>
         </footer>
       </div>
     </div>
   )
+}
+
+export default function AuthPage() {
+  return <AuthContent />
 }

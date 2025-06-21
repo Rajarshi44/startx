@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 
-// This would be the Civic Auth configuration - you'll need to configure this based on your Civic Auth setup
-const CIVIC_CLIENT_ID = process.env.CIVIC_CLIENT_ID
+// Civic Auth Web3 configuration
+const CIVIC_CLIENT_ID = process.env.CIVIC_CLIENT_ID || process.env.NEXT_PUBLIC_CIVIC_CLIENT_ID
 const CIVIC_CLIENT_SECRET = process.env.CIVIC_CLIENT_SECRET
 const CIVIC_REDIRECT_URI = process.env.CIVIC_REDIRECT_URI || `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/civicauth/callback`
 
@@ -50,6 +50,22 @@ export async function GET(request: NextRequest) {
 
       const userData = await userResponse.json()
       
+      // Get wallet information if available
+      let walletData = null;
+      try {
+        const walletResponse = await fetch('https://auth.civic.com/api/wallet', {
+          headers: {
+            Authorization: `Bearer ${tokenData.access_token}`,
+          },
+        })
+        
+        if (walletResponse.ok) {
+          walletData = await walletResponse.json()
+        }
+      } catch (error) {
+        console.log('No wallet data available:', error)
+      }
+      
       // Create Supabase client
       const cookieStore = cookies()
       const supabase = await createClient(cookieStore)
@@ -61,17 +77,22 @@ export async function GET(request: NextRequest) {
         .eq('civic_id', userData.id)
         .single()
 
+      const userUpdateData = {
+        email: userData.email,
+        name: userData.name || userData.displayName,
+        wallet_address: walletData?.address || userData.walletAddress,
+        profile_data: {
+          ...userData,
+          wallet: walletData
+        },
+        updated_at: new Date().toISOString(),
+      }
+
       if (existingUser) {
         // User exists, update their profile data
         await supabase
           .from('users')
-          .update({
-            email: userData.email,
-            name: userData.name || userData.displayName,
-            wallet_address: userData.walletAddress,
-            profile_data: userData,
-            updated_at: new Date().toISOString(),
-          })
+          .update(userUpdateData)
           .eq('civic_id', userData.id)
         
         // Redirect based on onboarding status
@@ -88,10 +109,7 @@ export async function GET(request: NextRequest) {
           .from('users')
           .insert({
             civic_id: userData.id,
-            email: userData.email,
-            name: userData.name || userData.displayName,
-            wallet_address: userData.walletAddress,
-            profile_data: userData,
+            ...userUpdateData,
             onboarded: false,
           })
 
@@ -114,7 +132,7 @@ export async function GET(request: NextRequest) {
   authUrl.searchParams.set('client_id', CIVIC_CLIENT_ID!)
   authUrl.searchParams.set('redirect_uri', CIVIC_REDIRECT_URI)
   authUrl.searchParams.set('response_type', 'code')
-  authUrl.searchParams.set('scope', 'profile email')
+  authUrl.searchParams.set('scope', 'profile email wallet')
   authUrl.searchParams.set('state', crypto.randomUUID())
 
   return NextResponse.redirect(authUrl)
