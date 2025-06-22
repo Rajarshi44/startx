@@ -14,6 +14,16 @@ cloudinary.config({
   secure: true,
 });
 
+interface CloudinaryUploadResult {
+  secure_url: string;
+  public_id: string;
+  width?: number;
+  height?: number;
+  duration?: number;
+  format: string;
+  bytes: number;
+}
+
 // GET - Fetch all messages for the community forum
 export async function GET(req: NextRequest) {
   const client = new MongoClient(uri);
@@ -93,7 +103,6 @@ export async function POST(req: NextRequest) {
     let message = "";
     let civicId = "";
     let media = null;
-    let audioBlob = null;
 
     // Check if the request is multipart/form-data (for file uploads)
     const contentType = req.headers.get("content-type") || "";
@@ -153,33 +162,35 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        const uploadResult = await new Promise((resolve, reject) => {
-          cloudinary.uploader
-            .upload_stream(
-              {
-                resource_type: "image",
-                folder: "community/images",
-                transformation: [
-                  { quality: "auto", fetch_format: "auto" },
-                  { width: 1200, height: 1200, crop: "limit" },
-                ],
-              },
-              (error, result) => {
-                if (error) reject(error);
-                else resolve(result);
-              }
-            )
-            .end(buffer);
-        });
+        const uploadResult = await new Promise<CloudinaryUploadResult>(
+          (resolve, reject) => {
+            cloudinary.uploader
+              .upload_stream(
+                {
+                  resource_type: "image",
+                  folder: "community/images",
+                  transformation: [
+                    { quality: "auto", fetch_format: "auto" },
+                    { width: 1200, height: 1200, crop: "limit" },
+                  ],
+                },
+                (error, result) => {
+                  if (error) reject(error);
+                  else resolve(result as CloudinaryUploadResult);
+                }
+              )
+              .end(buffer);
+          }
+        );
 
         media = {
           type: "image",
-          url: (uploadResult as any).secure_url,
-          publicId: (uploadResult as any).public_id,
-          width: (uploadResult as any).width,
-          height: (uploadResult as any).height,
-          format: (uploadResult as any).format,
-          bytes: (uploadResult as any).bytes,
+          url: uploadResult.secure_url,
+          publicId: uploadResult.public_id,
+          width: uploadResult.width,
+          height: uploadResult.height,
+          format: uploadResult.format,
+          bytes: uploadResult.bytes,
         };
       }
 
@@ -215,29 +226,31 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        const uploadResult = await new Promise((resolve, reject) => {
-          cloudinary.uploader
-            .upload_stream(
-              {
-                resource_type: "video", // Cloudinary treats audio as video
-                folder: "community/audio",
-                format: "mp3", // Convert to MP3 for better compatibility
-              },
-              (error, result) => {
-                if (error) reject(error);
-                else resolve(result);
-              }
-            )
-            .end(buffer);
-        });
+        const uploadResult = await new Promise<CloudinaryUploadResult>(
+          (resolve, reject) => {
+            cloudinary.uploader
+              .upload_stream(
+                {
+                  resource_type: "video", // Cloudinary treats audio as video
+                  folder: "community/audio",
+                  format: "mp3", // Convert to MP3 for better compatibility
+                },
+                (error, result) => {
+                  if (error) reject(error);
+                  else resolve(result as CloudinaryUploadResult);
+                }
+              )
+              .end(buffer);
+          }
+        );
 
         media = {
           type: "audio",
-          url: (uploadResult as any).secure_url,
-          publicId: (uploadResult as any).public_id,
-          duration: (uploadResult as any).duration,
-          format: (uploadResult as any).format,
-          bytes: (uploadResult as any).bytes,
+          url: uploadResult.secure_url,
+          publicId: uploadResult.public_id,
+          duration: uploadResult.duration,
+          format: uploadResult.format,
+          bytes: uploadResult.bytes,
         };
       }
     } else {

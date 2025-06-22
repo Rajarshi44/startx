@@ -5,15 +5,15 @@ const uri =
   "mongodb+srv://rishi404:giXEpvLDXFg8Jwzd@cluster0.6nhngod.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const dbName = "resumeUploads";
 
-// GET - Get single post with comments
+// GET - Fetch a specific post
 export async function GET(
   req: NextRequest,
-  { params }: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
   const client = new MongoClient(uri);
 
   try {
-    const { postId } = params;
+    const { postId } = await params;
 
     if (!ObjectId.isValid(postId)) {
       return NextResponse.json({ error: "Invalid post ID" }, { status: 400 });
@@ -23,7 +23,7 @@ export async function GET(
     const db = client.db(dbName);
     const postsCollection = db.collection("communityPosts");
 
-    // Get post with user information
+    // Fetch post with user information and engagement metrics
     const post = await postsCollection
       .aggregate([
         { $match: { _id: new ObjectId(postId) } },
@@ -82,12 +82,12 @@ export async function GET(
 // PUT - Update post (only by owner)
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
   const client = new MongoClient(uri);
 
   try {
-    const { postId } = params;
+    const { postId } = await params;
     const { title, content, media, tags, civicId } = await req.json();
 
     if (!ObjectId.isValid(postId)) {
@@ -214,12 +214,12 @@ export async function PUT(
 // DELETE - Delete post (only by owner)
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
   const client = new MongoClient(uri);
 
   try {
-    const { postId } = params;
+    const { postId } = await params;
     const url = new URL(req.url);
     const civicId = url.searchParams.get("civicId");
 

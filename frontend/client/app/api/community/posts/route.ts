@@ -5,21 +5,6 @@ const uri =
   "mongodb+srv://rishi404:giXEpvLDXFg8Jwzd@cluster0.6nhngod.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const dbName = "resumeUploads";
 
-interface SortCriteria {
-  [key: string]:
-    | number
-    | { $gte: Date }
-    | {
-        $expr: {
-          $add: (
-            | number
-            | { $size: string }
-            | { $multiply: (string | number)[] }
-          )[];
-        };
-      };
-}
-
 interface MatchCriteria {
   tags?: { $in: string[] };
 }
@@ -42,7 +27,7 @@ export async function GET(req: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Build sort criteria
-    let sortCriteria: SortCriteria = { createdAt: -1 }; // Default: latest first
+    let sortCriteria: unknown = { createdAt: -1 }; // Default: latest first
 
     if (sortBy === "popular") {
       sortCriteria = { likesCount: -1, createdAt: -1 };

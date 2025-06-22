@@ -611,7 +611,7 @@ export default function CommunityPostsPage() {
               >
                 <Select
                   value={filters.sortBy}
-                  onValueChange={(value: any) =>
+                  onValueChange={(value: "latest" | "popular" | "trending") =>
                     setFilters((prev) => ({ ...prev, sortBy: value }))
                   }
                 >
