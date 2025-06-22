@@ -8,7 +8,8 @@ import { AuroraText } from "./aurora-text"
 import Link from "next/link"
 import { BentoCard, BentoGrid } from "./bento"
 import HeroVideoDialog from "./hero-video"
-
+import { CountUpStats } from "./count-up-stats"
+import { NeuPricing } from "./pricing"
 
 // Updated bento cards data with consistent styling
 const bentoFeatures = [
@@ -255,7 +256,8 @@ export function HeroSection() {
             </p>
           </div>
            <StaggerTestimonials />
-          
+          <CountUpStats />
+          <NeuPricing />
         </div>
       </div>
     </div>
