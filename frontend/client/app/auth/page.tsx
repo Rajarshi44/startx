@@ -1,25 +1,14 @@
 /*eslint-disable*/
 "use client"
-
-import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import * as THREE from "three"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Rocket, Mail, Lock, User, ArrowLeft, Wallet, Shield, Zap, ExternalLink, AlertCircle } from "lucide-react"
+import { Rocket, ArrowLeft, Wallet, Shield, Zap, ExternalLink, AlertCircle } from "lucide-react"
 import { useUser } from "@civic/auth-web3/react"
 import Link from "next/link"
-import { 
-  useAccount, 
-  useConnect, 
-  useBalance,
-  useDisconnect 
-} from 'wagmi'
-import { 
-  UserButton 
-} from '@civic/auth-web3/react'
+import { useAccount, useConnect, useBalance, useDisconnect } from "wagmi"
+import { UserButton } from "@civic/auth-web3/react"
 
 // Separate component for the auth content that needs access to hooks
 const AuthContent = () => {
@@ -42,8 +31,8 @@ const AuthContent = () => {
 
   // Check if MetaMask is installed
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setHasMetaMask(typeof window.ethereum !== 'undefined')
+    if (typeof window !== "undefined") {
+      setHasMetaMask(typeof window.ethereum !== "undefined")
     }
   }, [])
 
@@ -66,30 +55,30 @@ const AuthContent = () => {
     const globeGroup = new THREE.Group()
     globeRef.current = globeGroup
 
-    // Gold materials
-    const goldMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffcb74,
+    // Steel blue materials (updated from gold)
+    const steelBlueMaterial = new THREE.MeshBasicMaterial({
+      color: 0x637089,
       transparent: true,
       opacity: 0.3,
     })
 
-    const goldWireframeMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffd700,
+    const steelBlueWireframeMaterial = new THREE.MeshBasicMaterial({
+      color: 0x637089,
       transparent: true,
       opacity: 0.8,
       wireframe: true,
     })
 
-    const goldLineMaterial = new THREE.LineBasicMaterial({
-      color: 0xffcb74,
+    const steelBlueLineMaterial = new THREE.LineBasicMaterial({
+      color: 0x637089,
       transparent: true,
       opacity: 0.6,
     })
 
     // Create main globe sphere
     const globeGeometry = new THREE.SphereGeometry(1.5, 32, 16)
-    const globe = new THREE.Mesh(globeGeometry, goldMaterial)
-    const globeWireframe = new THREE.Mesh(globeGeometry, goldWireframeMaterial)
+    const globe = new THREE.Mesh(globeGeometry, steelBlueMaterial)
+    const globeWireframe = new THREE.Mesh(globeGeometry, steelBlueWireframeMaterial)
 
     globeGroup.add(globe)
     globeGroup.add(globeWireframe)
@@ -102,7 +91,7 @@ const AuthContent = () => {
 
       if (radius > 0.1) {
         const latGeometry = new THREE.RingGeometry(radius - 0.02, radius + 0.02, 32)
-        const latLine = new THREE.Mesh(latGeometry, goldLineMaterial)
+        const latLine = new THREE.Mesh(latGeometry, steelBlueLineMaterial)
         latLine.position.y = y
         latLine.rotation.x = Math.PI / 2
         globeGroup.add(latLine)
@@ -121,18 +110,18 @@ const AuthContent = () => {
         points.push(new THREE.Vector3(x, y, z))
       }
       const longGeometry = new THREE.BufferGeometry().setFromPoints(points)
-      const longLine = new THREE.Line(longGeometry, goldLineMaterial)
+      const longLine = new THREE.Line(longGeometry, steelBlueLineMaterial)
       globeGroup.add(longLine)
     }
 
-    // Create floating golden rings around the globe
+    // Create floating steel blue rings around the globe
     const ringsGroup = new THREE.Group()
     ringsRef.current = ringsGroup
 
     for (let i = 0; i < 3; i++) {
       const ringGeometry = new THREE.RingGeometry(2 + i * 0.5, 2.1 + i * 0.5, 64)
       const ringMaterial = new THREE.MeshBasicMaterial({
-        color: 0xffcb74,
+        color: 0x637089,
         transparent: true,
         opacity: 0.4 - i * 0.1,
         side: THREE.DoubleSide,
@@ -152,7 +141,7 @@ const AuthContent = () => {
       ringsGroup.add(ring)
     }
 
-    // Create golden particles orbiting the globe
+    // Create steel blue particles orbiting the globe
     const particlesGeometry = new THREE.BufferGeometry()
     const particlesCount = 200
 
@@ -172,7 +161,7 @@ const AuthContent = () => {
 
     const particlesMaterial = new THREE.PointsMaterial({
       size: 0.03,
-      color: 0xffcb74,
+      color: 0x637089,
       transparent: true,
       opacity: 0.8,
       blending: THREE.AdditiveBlending,
@@ -257,13 +246,13 @@ const AuthContent = () => {
   // Connect to MetaMask wallet
   const connectWallet = async () => {
     if (!hasMetaMask) {
-      window.open('https://metamask.io/download/', '_blank')
+      window.open("https://metamask.io/download/", "_blank")
       return
     }
 
     setIsLoading(true)
     try {
-      const metaMaskConnector = connectors.find(connector => connector.name === 'MetaMask')
+      const metaMaskConnector = connectors.find((connector) => connector.name === "MetaMask")
       if (metaMaskConnector) {
         await connect({ connector: metaMaskConnector })
       } else {
@@ -271,7 +260,7 @@ const AuthContent = () => {
         await connect({ connector: connectors[0] })
       }
     } catch (error) {
-      console.error('Error connecting wallet:', error)
+      console.error("Error connecting wallet:", error)
     } finally {
       setIsLoading(false)
     }
@@ -286,7 +275,13 @@ const AuthContent = () => {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-black" style={{ color: "#f6f6f6" }}>
+    <div
+      className="relative min-h-screen overflow-hidden"
+      style={{
+        background: "linear-gradient(135deg, #0C0C0C 0%, #1F2A3C 100%)",
+        color: "#FFFFFF",
+      }}
+    >
       {/* Three.js Canvas */}
       <div ref={mountRef} className="absolute inset-0 z-0" />
 
@@ -295,13 +290,13 @@ const AuthContent = () => {
         {/* Navigation */}
         <nav className="p-6 flex justify-between items-center">
           <Link href="/" className="inline-flex items-center space-x-2 hover:opacity-80 transition-opacity">
-            <ArrowLeft className="h-5 w-5" style={{ color: "#ffcb74" }} />
-            <span style={{ color: "#ffcb74" }}>Back to Home</span>
+            <ArrowLeft className="h-5 w-5" style={{ color: "#637089" }} />
+            <span style={{ color: "#637089" }}>Back to Home</span>
           </Link>
           <div className="flex items-center space-x-4">
             <div className="text-2xl font-bold">
-              <span style={{ color: "#f6f6f6" }}>Startup</span>
-              <span style={{ color: "#ffcb74" }}>Hub</span>
+              <span style={{ color: "#FFFFFF" }}>Start</span>
+              <span style={{ color: "#637089" }}>X</span>
             </div>
             {userContext.user && <UserButton />}
           </div>
@@ -313,12 +308,12 @@ const AuthContent = () => {
             {/* Header */}
             <div className="mb-8">
               <div className="flex items-center space-x-3 mb-4">
-                <Rocket className="h-8 w-8" style={{ color: "#ffcb74" }} />
-                <h1 className="text-4xl font-bold" style={{ color: "#f6f6f6" }}>
-                  Welcome to <span style={{ color: "#ffcb74" }}>StartupHub</span>
+                <Rocket className="h-8 w-8" style={{ color: "#637089" }} />
+                <h1 className="text-4xl font-bold" style={{ color: "#FFFFFF" }}>
+                  Welcome to <span style={{ color: "#637089" }}>STARTX</span>
                 </h1>
               </div>
-              <p className="text-xl text-gray-300">
+              <p className="text-xl" style={{ color: "#D1D5DB" }}>
                 {userContext.user
                   ? "Connect your MetaMask wallet to access the Web3 startup ecosystem."
                   : "Join the Web3 startup ecosystem with secure, decentralized authentication."}
@@ -329,15 +324,15 @@ const AuthContent = () => {
             <Card
               className="border backdrop-blur-sm shadow-2xl"
               style={{
-                borderColor: "rgba(255, 203, 116, 0.2)",
-                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                borderColor: "#B0B8C1",
+                backgroundColor: "rgba(31, 42, 60, 0.4)",
               }}
             >
               <CardHeader className="pb-4">
-                <CardTitle className="text-2xl" style={{ color: "#f6f6f6" }}>
+                <CardTitle className="text-2xl" style={{ color: "#FFFFFF" }}>
                   {userContext.user ? "Connect Your Wallet" : "Get Started with Web3"}
                 </CardTitle>
-                <CardDescription style={{ color: "#d1d1d1" }}>
+                <CardDescription style={{ color: "#D1D5DB" }}>
                   {userContext.user
                     ? "Connect your existing MetaMask wallet to access all features."
                     : "Secure, decentralized authentication powered by Civic Auth"}
@@ -347,17 +342,32 @@ const AuthContent = () => {
                 {!userContext.user ? (
                   <div className="space-y-4">
                     <div className="space-y-3">
-                      <div className="flex items-center space-x-3 p-3 rounded-lg" style={{ backgroundColor: "rgba(255, 203, 116, 0.1)" }}>
-                        <Shield className="h-5 w-5" style={{ color: "#ffcb74" }} />
-                        <span className="text-sm text-gray-300">Secure Web3 Authentication</span>
+                      <div
+                        className="flex items-center space-x-3 p-3 rounded-lg"
+                        style={{ backgroundColor: "rgba(99, 112, 137, 0.2)" }}
+                      >
+                        <Shield className="h-5 w-5" style={{ color: "#637089" }} />
+                        <span className="text-sm" style={{ color: "#D1D5DB" }}>
+                          Secure Web3 Authentication
+                        </span>
                       </div>
-                      <div className="flex items-center space-x-3 p-3 rounded-lg" style={{ backgroundColor: "rgba(255, 203, 116, 0.1)" }}>
-                        <Wallet className="h-5 w-5" style={{ color: "#ffcb74" }} />
-                        <span className="text-sm text-gray-300">Connect Your Existing Wallet</span>
+                      <div
+                        className="flex items-center space-x-3 p-3 rounded-lg"
+                        style={{ backgroundColor: "rgba(99, 112, 137, 0.2)" }}
+                      >
+                        <Wallet className="h-5 w-5" style={{ color: "#637089" }} />
+                        <span className="text-sm" style={{ color: "#D1D5DB" }}>
+                          Connect Your Existing Wallet
+                        </span>
                       </div>
-                      <div className="flex items-center space-x-3 p-3 rounded-lg" style={{ backgroundColor: "rgba(255, 203, 116, 0.1)" }}>
-                        <Zap className="h-5 w-5" style={{ color: "#ffcb74" }} />
-                        <span className="text-sm text-gray-300">Seamless Onboarding</span>
+                      <div
+                        className="flex items-center space-x-3 p-3 rounded-lg"
+                        style={{ backgroundColor: "rgba(99, 112, 137, 0.2)" }}
+                      >
+                        <Zap className="h-5 w-5" style={{ color: "#637089" }} />
+                        <span className="text-sm" style={{ color: "#D1D5DB" }}>
+                          Seamless Onboarding
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -366,68 +376,88 @@ const AuthContent = () => {
                     {!isConnected ? (
                       <div className="space-y-4">
                         {!hasMetaMask ? (
-                          <div className="text-center p-4 rounded-lg" style={{ backgroundColor: "rgba(239, 68, 68, 0.1)" }}>
+                          <div
+                            className="text-center p-4 rounded-lg"
+                            style={{ backgroundColor: "rgba(239, 68, 68, 0.1)" }}
+                          >
                             <AlertCircle className="h-12 w-12 mx-auto mb-2" style={{ color: "#ef4444" }} />
-                            <p className="text-sm text-red-400 mb-3">
-                              MetaMask is required to use this application
-                            </p>
+                            <p className="text-sm text-red-400 mb-3">MetaMask is required to use this application</p>
                             <Button
                               onClick={connectWallet}
-                              className="w-full bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white hover:from-[#ea580c] hover:to-[#f97316] font-semibold transition-all duration-300"
+                              className="w-full font-semibold transition-all duration-300"
+                              style={{
+                                backgroundColor: "#637089",
+                                color: "#FFFFFF",
+                              }}
                             >
                               <ExternalLink className="h-4 w-4 mr-2" />
                               Install MetaMask
                             </Button>
                           </div>
                         ) : (
-                          <div className="text-center p-4 rounded-lg" style={{ backgroundColor: "rgba(255, 203, 116, 0.1)" }}>
-                            <Wallet className="h-12 w-12 mx-auto mb-2" style={{ color: "#ffcb74" }} />
-                            <p className="text-sm text-gray-300 mb-3">
+                          <div
+                            className="text-center p-4 rounded-lg"
+                            style={{ backgroundColor: "rgba(99, 112, 137, 0.2)" }}
+                          >
+                            <Wallet className="h-12 w-12 mx-auto mb-2" style={{ color: "#637089" }} />
+                            <p className="text-sm mb-3" style={{ color: "#D1D5DB" }}>
                               Connect your MetaMask wallet to continue
                             </p>
                             <Button
                               onClick={connectWallet}
                               disabled={isLoading}
-                              className="w-full bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] font-semibold transition-all duration-300"
+                              className="w-full font-semibold transition-all duration-300 hover:opacity-90"
+                              style={{
+                                backgroundColor: "#637089",
+                                color: "#FFFFFF",
+                              }}
                             >
                               {isLoading ? "Connecting..." : "Connect MetaMask Wallet"}
                             </Button>
-                            {connectError && (
-                              <p className="text-xs text-red-400 mt-2">
-                                Error: {connectError.message}
-                              </p>
-                            )}
+                            {connectError && <p className="text-xs text-red-400 mt-2">Error: {connectError.message}</p>}
                           </div>
                         )}
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        <div className="text-center p-4 rounded-lg" style={{ backgroundColor: "rgba(34, 197, 94, 0.1)" }}>
-                          <Shield className="h-12 w-12 mx-auto mb-2" style={{ color: "#22c55e" }} />
-                          <p className="text-sm text-green-400 mb-2">✓ Wallet Connected</p>
-                          <p className="text-xs text-gray-400 mb-2">
+                        <div
+                          className="text-center p-4 rounded-lg"
+                          style={{ backgroundColor: "rgba(74, 222, 128, 0.1)" }}
+                        >
+                          <Shield className="h-12 w-12 mx-auto mb-2" style={{ color: "#4ADE80" }} />
+                          <p className="text-sm mb-2" style={{ color: "#4ADE80" }}>
+                            ✓ Wallet Connected
+                          </p>
+                          <p className="text-xs mb-2" style={{ color: "#B0B8C1" }}>
                             Address: {address?.slice(0, 6)}...{address?.slice(-4)}
                           </p>
-                          <p className="text-xs text-gray-400">
-                            Balance: {
-                              balance?.data
-                                ? `${Number(balance.data.formatted).toFixed(4)} ${balance.data.symbol}`
-                                : 'Loading...'
-                            }
+                          <p className="text-xs" style={{ color: "#B0B8C1" }}>
+                            Balance:{" "}
+                            {balance?.data
+                              ? `${Number(balance.data.formatted).toFixed(4)} ${balance.data.symbol}`
+                              : "Loading..."}
                           </p>
                         </div>
-                        
+
                         <div className="flex space-x-2">
                           <Button
                             onClick={handleDisconnectWallet}
                             variant="outline"
-                            className="flex-1 bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800 hover:border-[#ffcb74]"
+                            className="flex-1 bg-transparent text-white hover:opacity-80"
+                            style={{
+                              borderColor: "#B0B8C1",
+                              backgroundColor: "#374151",
+                            }}
                           >
                             Disconnect
                           </Button>
                           <Button
                             onClick={handleContinueToOnboarding}
-                            className="flex-1 bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] font-semibold transition-all duration-300"
+                            className="flex-1 font-semibold transition-all duration-300 hover:opacity-90"
+                            style={{
+                              backgroundColor: "#637089",
+                              color: "#FFFFFF",
+                            }}
                           >
                             Continue
                           </Button>
@@ -441,10 +471,16 @@ const AuthContent = () => {
                   <div className="mt-6">
                     <div className="relative">
                       <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-600" />
+                        <div className="w-full border-t" style={{ borderColor: "#B0B8C1" }} />
                       </div>
                       <div className="relative flex justify-center text-sm">
-                        <span className="px-2 text-gray-400" style={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }}>
+                        <span
+                          className="px-2"
+                          style={{
+                            color: "#B0B8C1",
+                            backgroundColor: "rgba(31, 42, 60, 0.4)",
+                          }}
+                        >
                           Secure Web3 Authentication
                         </span>
                       </div>
@@ -452,7 +488,11 @@ const AuthContent = () => {
                     <div className="mt-4">
                       <Button
                         onClick={() => userContext.signIn()}
-                        className="w-full bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] font-semibold transition-all duration-300"
+                        className="w-full font-semibold transition-all duration-300 hover:opacity-90"
+                        style={{
+                          backgroundColor: "#637089",
+                          color: "#FFFFFF",
+                        }}
                       >
                         Sign In with Civic Auth
                       </Button>
@@ -462,13 +502,13 @@ const AuthContent = () => {
               </CardContent>
             </Card>
 
-            <p className="text-center text-sm text-gray-400 mt-6">
+            <p className="text-center text-sm mt-6" style={{ color: "#B0B8C1" }}>
               By signing up, you agree to our{" "}
-              <Link href="#" className="hover:underline transition-colors" style={{ color: "#ffcb74" }}>
+              <Link href="#" className="hover:underline transition-colors" style={{ color: "#637089" }}>
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="#" className="hover:underline transition-colors" style={{ color: "#ffcb74" }}>
+              <Link href="#" className="hover:underline transition-colors" style={{ color: "#637089" }}>
                 Privacy Policy
               </Link>
             </p>
@@ -476,8 +516,8 @@ const AuthContent = () => {
         </main>
 
         {/* Footer */}
-        <footer className="p-6 text-left text-gray-500 text-sm">
-          <p>&copy; 2024 StartupHub. Powered by Web3. Built for the future.</p>
+        <footer className="p-6 text-left text-sm" style={{ color: "#B0B8C1" }}>
+          <p>&copy; 2025 StartX. Powered by Web3. Built for the future.</p>
         </footer>
       </div>
     </div>

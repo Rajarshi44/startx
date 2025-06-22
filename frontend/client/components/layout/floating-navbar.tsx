@@ -22,17 +22,18 @@ export function FloatingNavbar() {
       isActive: pathname.startsWith("/dashboard/founder")
     },
     {
-      href: "/dashboard/investor", 
-      icon: Users,
-      label: "Investor",
-      isActive: pathname.startsWith("/dashboard/investor")
-    },
-    {
       href: "/dashboard/jobseeker",
       icon: Briefcase,
       label: "Job Seeker", 
       isActive: pathname.startsWith("/dashboard/jobseeker")
     },
+    {
+      href: "/dashboard/investor", 
+      icon: Users,
+      label: "Investor",
+      isActive: pathname.startsWith("/dashboard/investor")
+    },
+    
     {
       href: "/community",
       icon: MessageCircle,
