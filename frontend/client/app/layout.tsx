@@ -16,8 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "StartupHub - Web3 Startup Ecosystem",
-  description: "Connect founders, investors, and opportunities in the Web3 startup ecosystem",
+  title: "StartX - Web3 Startup Ecosystem",
+  description:
+    "Connect founders, investors, and opportunities in the Web3 startup ecosystem",
 };
 
 export default function RootLayout({

@@ -482,7 +482,7 @@ export default function CommunityPage() {
                 Join the Community
               </CardTitle>
               <CardDescription style={{ color: "#d1d1d1" }}>
-                Choose a username to enter the StartupHub mentoring forum
+                Choose a username to enter the StartX mentoring forum
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -568,7 +568,10 @@ export default function CommunityPage() {
               </h1>
             </div>
             <Link href="/community/posts">
-              <Button variant="outline" className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800 hover:border-[#ffcb74]">
+              <Button
+                variant="outline"
+                className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800 hover:border-[#ffcb74]"
+              >
                 <MessageCircle className="h-4 w-4 mr-2" />
                 View Posts
               </Button>
@@ -576,7 +579,7 @@ export default function CommunityPage() {
           </div>
           <p className="text-gray-400">
             Connect with fellow entrepreneurs, investors, and mentors in the
-            StartupHub community
+            StartX community
           </p>
         </div>
 

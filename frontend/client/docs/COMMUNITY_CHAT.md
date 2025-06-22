@@ -1,6 +1,6 @@
 # Community Chat System
 
-This document describes the community chat system implemented for the StartupHub platform.
+This document describes the community chat system implemented for the StartX platform.
 
 ## Overview
 
@@ -9,12 +9,14 @@ The community chat system allows verified users on the platform to communicate w
 ## Features
 
 ### User Registration
+
 - Users must be authenticated through Civic Auth
 - Username selection with validation (3-20 characters, alphanumeric + underscores)
 - Automatic verification for platform users
 - Wallet address storage (optional)
 
 ### Messaging
+
 - Non-real-time chat interface
 - Message length limit: 1000 characters
 - Pagination support (20 messages per page)
@@ -25,6 +27,7 @@ The community chat system allows verified users on the platform to communicate w
 - **Media viewer**: Click to zoom images, play/pause/seek audio with waveform
 
 ### User Interface
+
 - Dark theme consistent with platform design
 - Responsive design for mobile and desktop
 - User avatars with initials
@@ -34,20 +37,24 @@ The community chat system allows verified users on the platform to communicate w
 ## API Endpoints
 
 ### User Management
+
 - `GET /api/community/users?civicId={id}` - Check if user exists
 - `POST /api/community/users` - Register new user or update username
 - `PUT /api/community/users` - Update verification status (admin only)
 
 ### Messages
+
 - `GET /api/community/messages?page={page}&limit={limit}` - Fetch messages with pagination
 - `POST /api/community/messages` - Send new message (with optional media attachment)
 
 ### Media Upload
+
 - `POST /api/community/upload` - Upload images or audio files to Cloudinary
 
 ## Database Schema
 
 ### Collection: `communityUsers`
+
 ```javascript
 {
   _id: ObjectId,
@@ -61,6 +68,7 @@ The community chat system allows verified users on the platform to communicate w
 ```
 
 ### Collection: `communityMessages`
+
 ```javascript
 {
   _id: ObjectId,
@@ -85,7 +93,7 @@ The community chat system allows verified users on the platform to communicate w
 
 1. **Authentication Required**: Users must be signed in with Civic Auth
 2. **Verification Check**: Only verified users can send messages
-3. **Input Validation**: 
+3. **Input Validation**:
    - Username format validation
    - Message length limits
    - XSS protection through proper encoding
@@ -123,6 +131,7 @@ frontend/client/
 ## Usage
 
 ### For Users
+
 1. Navigate to `/community` from the floating navbar
 2. If not registered, enter a username to join
 3. Start chatting with other community members
@@ -133,29 +142,34 @@ frontend/client/
 8. Use Ctrl+Enter for quick message sending
 
 ### For Developers
+
 ```typescript
-import { communityService } from '@/services/communityService'
+import { communityService } from "@/services/communityService";
 
 // Check if user is registered
-const userResponse = await communityService.getUser(civicId)
+const userResponse = await communityService.getUser(civicId);
 
 // Send a message
 const messageResponse = await communityService.sendMessage({
   message: "Hello community!",
-  civicId: user.id
-})
+  civicId: user.id,
+});
 ```
 
 ## Configuration
 
 ### MongoDB
+
 The system uses the following MongoDB connection:
+
 - URI: `mongodb+srv://rishi404:giXEpvLDXFg8Jwzd@cluster0.6nhngod.mongodb.net/`
 - Database: `resumeUploads`
 - Collections: `communityUsers`, `communityMessages`
 
 ### Cloudinary
+
 Media files are stored on Cloudinary with the following configuration:
+
 - Cloud Name: `djydvffdp`
 - API Key: `615679796164426`
 - API Secret: `ObBGhhlXY5FxwCvvMqHIGuCsdxI`
@@ -184,6 +198,7 @@ Media files are stored on Cloudinary with the following configuration:
 4. **Loading Issues**: Refresh the page and check console for errors
 
 ### Error Codes
+
 - `400`: Bad request (missing parameters or validation errors)
 - `403`: Forbidden (user not verified)
 - `404`: User not found
@@ -198,4 +213,4 @@ When contributing to the community chat system:
 2. Add proper error handling and validation
 3. Update this documentation for any API changes
 4. Test with different user scenarios
-5. Ensure MongoDB queries are optimized 
+5. Ensure MongoDB queries are optimized

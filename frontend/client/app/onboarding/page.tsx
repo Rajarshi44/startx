@@ -1,13 +1,21 @@
 /*eslint-disable*/
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
-import { Lightbulb, Users, TrendingUp, ArrowRight, ArrowLeft, Sparkles, LogOut } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useUser, UserButton } from "@civic/auth/react"
-import { useToast } from "@/hooks/use-toast"
-import Link from "next/link"
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import {
+  Lightbulb,
+  Users,
+  TrendingUp,
+  ArrowRight,
+  ArrowLeft,
+  Sparkles,
+  LogOut,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useUser, UserButton } from "@civic/auth/react";
+import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 const userTypes = [
   {
@@ -16,7 +24,12 @@ const userTypes = [
     description: "I have an idea and want to build a startup",
     icon: Lightbulb,
     gradient: "from-purple-500/20 to-pink-500/20",
-    features: ["Idea validation", "Co-founder matching", "Investor connections", "Pitch deck creation"],
+    features: [
+      "Idea validation",
+      "Co-founder matching",
+      "Investor connections",
+      "Pitch deck creation",
+    ],
   },
   {
     id: "jobseeker",
@@ -24,7 +37,12 @@ const userTypes = [
     description: "I want to find opportunities in startups",
     icon: Users,
     gradient: "from-blue-500/20 to-cyan-500/20",
-    features: ["Role matching", "Interview practice", "Startup insights", "Career guidance"],
+    features: [
+      "Role matching",
+      "Interview practice",
+      "Startup insights",
+      "Career guidance",
+    ],
   },
   {
     id: "investor",
@@ -34,62 +52,68 @@ const userTypes = [
     gradient: "from-green-500/20 to-emerald-500/20",
     features: ["Deal flow", "Analytics", "Pitch reviews", "Portfolio tracking"],
   },
-]
+];
 
 export default function OnboardingPage() {
-  const [selectedType, setSelectedType] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [user, setUser] = useState<any>(null)
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const { toast } = useToast()
-  const { user: civicUser, signOut } = useUser()
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { toast } = useToast();
+  const { user: civicUser, signOut } = useUser();
 
   useEffect(() => {
-    const type = searchParams.get("type")
+    const type = searchParams.get("type");
     if (type && userTypes.find((t) => t.id === type)) {
-      setSelectedType(type)
+      setSelectedType(type);
     }
 
     // Check if user is authenticated and get their current data
     if (civicUser) {
-      checkUser()
+      checkUser();
     }
-  }, [searchParams, civicUser])
+  }, [searchParams, civicUser]);
 
   const checkUser = async () => {
-    if (!civicUser?.id) return
+    if (!civicUser?.id) return;
 
     try {
-      const response = await fetch(`/api/user/profile?civicId=${civicUser.id}`)
-      const data = await response.json()
+      const response = await fetch(`/api/user/profile?civicId=${civicUser.id}`);
+      const data = await response.json();
 
       if (response.ok) {
-        setUser(data.user)
+        setUser(data.user);
 
         // If user is already onboarded, redirect to their dashboard
-        if (data.user.onboarded && data.user.active_roles && data.user.active_roles.length > 0) {
+        if (
+          data.user.onboarded &&
+          data.user.active_roles &&
+          data.user.active_roles.length > 0
+        ) {
           // Redirect to the first active role's dashboard
-          const primaryRole = data.user.active_roles[0]
-          router.push(`/dashboard/${primaryRole}`)
+          const primaryRole = data.user.active_roles[0];
+          router.push(`/dashboard/${primaryRole}`);
         }
       } else if (response.status === 404) {
         // User not found in database, that's ok - they can still select a role
-        console.log("User not found in database, will be created on role selection")
+        console.log(
+          "User not found in database, will be created on role selection"
+        );
       }
     } catch (error) {
-      console.error("Error checking user:", error)
+      console.error("Error checking user:", error);
       toast({
         title: "Error",
         description: "There was an error loading your profile.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleContinue = async () => {
     if (selectedType && !isLoading && civicUser?.id) {
-      setIsLoading(true)
+      setIsLoading(true);
 
       try {
         const response = await fetch("/api/user/update-role", {
@@ -103,41 +127,48 @@ export default function OnboardingPage() {
             email: civicUser.email,
             name: civicUser.name || civicUser.username,
           }),
-        })
+        });
 
-        const data = await response.json()
+        const data = await response.json();
 
         if (response.ok) {
           toast({
             title: "Welcome aboard!",
             description: "Your profile has been set up successfully.",
-          })
+          });
 
           // Redirect to appropriate dashboard
-          router.push(`/dashboard/${selectedType}`)
+          router.push(`/dashboard/${selectedType}`);
         } else {
-          throw new Error(data.error || "Failed to update profile")
+          throw new Error(data.error || "Failed to update profile");
         }
       } catch (error) {
-        console.error("Error updating user role:", error)
+        console.error("Error updating user role:", error);
         toast({
           title: "Error",
-          description: "There was an error setting up your profile. Please try again.",
+          description:
+            "There was an error setting up your profile. Please try again.",
           variant: "destructive",
-        })
+        });
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
-  }
+  };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-black" style={{ color: "#f6f6f6" }}>
+    <div
+      className="relative min-h-screen overflow-hidden bg-black"
+      style={{ color: "#f6f6f6" }}
+    >
       {/* Content Overlay */}
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Navigation */}
         <nav className="p-6 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold hover:opacity-80 transition-opacity">
+          <Link
+            href="/"
+            className="text-2xl font-bold hover:opacity-80 transition-opacity"
+          >
             <span style={{ color: "#f6f6f6" }}>Startup</span>
             <span style={{ color: "#ffcb74" }}>Hub</span>
           </Link>
@@ -193,7 +224,8 @@ export default function OnboardingPage() {
                 <span
                   className="text-transparent bg-clip-text bg-gradient-to-r"
                   style={{
-                    backgroundImage: "linear-gradient(to right, #ffcb74, #ffd700)",
+                    backgroundImage:
+                      "linear-gradient(to right, #ffcb74, #ffd700)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                   }}
@@ -202,7 +234,8 @@ export default function OnboardingPage() {
                 </span>
               </h1>
               <p className="max-w-3xl text-xl lg:text-2xl text-gray-300 leading-relaxed mb-12">
-                Select the path that best describes your goals and we'll customize your experience with{" "}
+                Select the path that best describes your goals and we'll
+                customize your experience with{" "}
                 <span className="font-semibold" style={{ color: "#ffcb74" }}>
                   AI-powered tools
                 </span>{" "}
@@ -213,8 +246,8 @@ export default function OnboardingPage() {
             {/* User Type Selection */}
             <div className="grid lg:grid-cols-3 gap-8 mb-16">
               {userTypes.map((type) => {
-                const Icon = type.icon
-                const isSelected = selectedType === type.id
+                const Icon = type.icon;
+                const isSelected = selectedType === type.id;
                 return (
                   <div
                     key={type.id}
@@ -225,29 +258,44 @@ export default function OnboardingPage() {
                     }`}
                     onClick={() => setSelectedType(type.id)}
                     style={{
-                      borderColor: isSelected ? "#ffcb74" : "rgba(255, 203, 116, 0.2)",
+                      borderColor: isSelected
+                        ? "#ffcb74"
+                        : "rgba(255, 203, 116, 0.2)",
                     }}
                   >
                     {/* Icon and Header */}
                     <div className="text-center pb-6">
                       <div
                         className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 transition-all duration-300 ${
-                          isSelected ? "bg-[#ffcb74]/30" : "bg-[#ffcb74]/20 group-hover:bg-[#ffcb74]/30"
+                          isSelected
+                            ? "bg-[#ffcb74]/30"
+                            : "bg-[#ffcb74]/20 group-hover:bg-[#ffcb74]/30"
                         }`}
                       >
-                        <Icon className="h-8 w-8" style={{ color: "#ffcb74" }} />
+                        <Icon
+                          className="h-8 w-8"
+                          style={{ color: "#ffcb74" }}
+                        />
                       </div>
-                      <h3 className="text-2xl font-bold mb-4" style={{ color: "#f6f6f6" }}>
+                      <h3
+                        className="text-2xl font-bold mb-4"
+                        style={{ color: "#f6f6f6" }}
+                      >
                         {type.title}
                       </h3>
-                      <p className="text-gray-300 text-base">{type.description}</p>
+                      <p className="text-gray-300 text-base">
+                        {type.description}
+                      </p>
                     </div>
 
                     {/* Features List */}
                     <div className="pt-0">
                       <ul className="space-y-3">
                         {type.features.map((feature, index) => (
-                          <li key={index} className="flex items-center text-gray-300">
+                          <li
+                            key={index}
+                            className="flex items-center text-gray-300"
+                          >
                             <div
                               className="w-2 h-2 rounded-full mr-3 flex-shrink-0"
                               style={{ backgroundColor: "#ffcb74" }}
@@ -270,7 +318,7 @@ export default function OnboardingPage() {
                       </div>
                     )}
                   </div>
-                )
+                );
               })}
             </div>
 
@@ -291,7 +339,9 @@ export default function OnboardingPage() {
                 disabled={!selectedType || isLoading}
                 size="lg"
                 className={`bg-gradient-to-r from-[#ffcb74] to-[#ffd700] text-black hover:from-[#ffd700] hover:to-[#ffcb74] transition-all duration-300 shadow-lg hover:shadow-xl px-10 py-4 text-lg font-semibold ${
-                  !selectedType || isLoading ? "opacity-50 cursor-not-allowed" : ""
+                  !selectedType || isLoading
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
                 }`}
               >
                 {isLoading ? "Setting up..." : "Continue"}
@@ -303,9 +353,9 @@ export default function OnboardingPage() {
 
         {/* Footer */}
         <footer className="p-6 text-left text-gray-500 text-sm">
-          <p>&copy; 2024 StartupHub. Powered by AI. Built for the future.</p>
+          <p>&copy; 2024 StartX. Powered by AI. Built for the future.</p>
         </footer>
       </div>
     </div>
-  )
+  );
 }

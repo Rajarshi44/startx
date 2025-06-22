@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import { ModernButton } from "@/components/ui/modern-button"
-import { DisplaySM } from "@/components/ui/typography"
-import { Rocket, Menu, X } from "lucide-react"
-import Link from "next/link"
-import { useState } from "react"
+import { ModernButton } from "@/components/ui/modern-button";
+import { DisplaySM } from "@/components/ui/typography";
+import { Rocket, Menu, X } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 
 export function Header() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
     <header className="fixed top-0 w-full z-50 glass-effect border-b border-white/10">
@@ -18,12 +18,15 @@ export function Header() {
             <div className="w-10 h-10 bg-highlight rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
               <Rocket className="h-6 w-6 text-button" />
             </div>
-            <DisplaySM className="gradient-text">StartupHub</DisplaySM>
+            <DisplaySM className="gradient-text">StartX</DisplaySM>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link href="#features" className="text-text/70 hover:text-highlight transition-colors text-lg font-medium">
+            <Link
+              href="#features"
+              className="text-text/70 hover:text-highlight transition-colors text-lg font-medium"
+            >
               Features
             </Link>
             <Link
@@ -32,7 +35,10 @@ export function Header() {
             >
               How it Works
             </Link>
-            <Link href="#pricing" className="text-text/70 hover:text-highlight transition-colors text-lg font-medium">
+            <Link
+              href="#pricing"
+              className="text-text/70 hover:text-highlight transition-colors text-lg font-medium"
+            >
               Pricing
             </Link>
           </nav>
@@ -52,7 +58,11 @@ export function Header() {
             className="md:hidden p-2 text-text hover:text-highlight transition-colors"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {isMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
           </button>
         </div>
 
@@ -72,7 +82,10 @@ export function Header() {
               >
                 How it Works
               </Link>
-              <Link href="#pricing" className="text-text/70 hover:text-highlight transition-colors text-lg font-medium">
+              <Link
+                href="#pricing"
+                className="text-text/70 hover:text-highlight transition-colors text-lg font-medium"
+              >
                 Pricing
               </Link>
               <div className="flex flex-col space-y-3 pt-4">
@@ -88,5 +101,5 @@ export function Header() {
         )}
       </div>
     </header>
-  )
+  );
 }

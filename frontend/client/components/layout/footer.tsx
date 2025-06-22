@@ -1,6 +1,6 @@
-import { DisplaySM, BodyMedium } from "@/components/ui/typography"
-import { Rocket } from "lucide-react"
-import Link from "next/link"
+import { DisplaySM, BodyMedium } from "@/components/ui/typography";
+import { Rocket } from "lucide-react";
+import Link from "next/link";
 
 export function Footer() {
   return (
@@ -13,10 +13,11 @@ export function Footer() {
               <div className="w-10 h-10 bg-highlight rounded-xl flex items-center justify-center">
                 <Rocket className="h-6 w-6 text-button" />
               </div>
-              <DisplaySM className="gradient-text">StartupHub</DisplaySM>
+              <DisplaySM className="gradient-text">StartX</DisplaySM>
             </Link>
             <BodyMedium className="text-text/70 max-w-md mb-6">
-              Building the future of startup ecosystems with AI-powered tools and connections that matter.
+              Building the future of startup ecosystems with AI-powered tools
+              and connections that matter.
             </BodyMedium>
           </div>
 
@@ -26,7 +27,10 @@ export function Footer() {
             <ul className="space-y-4">
               {["Features", "Pricing", "API", "Documentation"].map((item) => (
                 <li key={item}>
-                  <Link href="#" className="text-text/70 hover:text-highlight transition-colors">
+                  <Link
+                    href="#"
+                    className="text-text/70 hover:text-highlight transition-colors"
+                  >
                     {item}
                   </Link>
                 </li>
@@ -39,7 +43,10 @@ export function Footer() {
             <ul className="space-y-4">
               {["About", "Blog", "Careers", "Contact"].map((item) => (
                 <li key={item}>
-                  <Link href="#" className="text-text/70 hover:text-highlight transition-colors">
+                  <Link
+                    href="#"
+                    className="text-text/70 hover:text-highlight transition-colors"
+                  >
                     {item}
                   </Link>
                 </li>
@@ -51,21 +58,30 @@ export function Footer() {
         {/* Bottom */}
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center">
           <BodyMedium className="text-text/60">
-            © 2024 StartupHub. Building the future of startup ecosystems.
+            © 2024 StartX. Building the future of startup ecosystems.
           </BodyMedium>
           <div className="flex space-x-6 mt-4 md:mt-0">
-            <Link href="#" className="text-text/60 hover:text-highlight transition-colors">
+            <Link
+              href="#"
+              className="text-text/60 hover:text-highlight transition-colors"
+            >
               Privacy
             </Link>
-            <Link href="#" className="text-text/60 hover:text-highlight transition-colors">
+            <Link
+              href="#"
+              className="text-text/60 hover:text-highlight transition-colors"
+            >
               Terms
             </Link>
-            <Link href="#" className="text-text/60 hover:text-highlight transition-colors">
+            <Link
+              href="#"
+              className="text-text/60 hover:text-highlight transition-colors"
+            >
               Security
             </Link>
           </div>
         </div>
       </div>
     </footer>
-  )
+  );
 }
